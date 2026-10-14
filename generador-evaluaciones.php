@@ -3,7 +3,7 @@
  * Plugin Name: Generador de Repartidos y Evaluaciones
  * Plugin URI: https://culturalibre.edu.uy
  * Description: Armá repartidos y evaluaciones a partir de tus propios documentos: extrae los ejercicios y las figuras y genera un archivo LibreOffice (.odt) listo para imprimir o editar. Incluye página de ayuda.
- * Version: 1.0.6
+ * Version: 1.0.7
  * Author: Leonardo - Cultura Libre
  * Author URI: https://culturalibre.edu.uy
  * License: GPL-2.0+
@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('GE_VERSION', '1.0.6');
+define('GE_VERSION', '1.0.7');
 define('GE_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GE_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('GE_MAX_UPLOAD_BYTES', 15 * 1024 * 1024);
@@ -22,12 +22,21 @@ define('GE_MAX_UPLOAD_BYTES', 15 * 1024 * 1024);
 define('GE_TTL_SECONDS', 2 * HOUR_IN_SECONDS);
 
 /**
- * Acceso: pueden usar el generador los usuarios con el permiso propio `use_generador_evaluaciones`
- * (rol "Docente (generador)") y, por compatibilidad, quienes pueden editar entradas.
- * Un usuario que solo inició sesión (p. ej. con Google) queda como Suscriptor y NO tiene acceso
- * hasta que se lo habilite (a mano o por la lista de correos de Ajustes → Generador).
+ * Acceso (Ajustes → Generador): por defecto puede usarlo cualquier usuario con sesión iniciada (p. ej. con Google).
+ * En modo «docente» solo los usuarios con el permiso `use_generador_evaluaciones` (rol "Docente (generador)")
+ * y, por compatibilidad, quienes pueden editar entradas; ahí un Suscriptor queda sin acceso hasta que se lo
+ * habilite (a mano o por la lista de correos).
  */
+function ge_access_mode() {
+    $m = get_option('ge_access_mode', 'logged_in');
+    return $m === 'docente' ? 'docente' : 'logged_in';
+}
+
 function ge_can_use() {
+    // Modo por defecto: cualquier usuario con sesión iniciada (los límites de uso por hora acotan el abuso).
+    if (ge_access_mode() === 'logged_in') {
+        return is_user_logged_in();
+    }
     $caps = apply_filters('ge_allowed_capabilities', array('use_generador_evaluaciones', 'edit_posts'));
     foreach ($caps as $cap) {
         if (current_user_can($cap)) return true;
@@ -91,6 +100,9 @@ add_action('admin_init', function () {
         }
         return implode("\n", array_unique($ok));
     }));
+    register_setting('ge_ajustes', 'ge_access_mode', array('type' => 'string', 'sanitize_callback' => function ($v) {
+        return $v === 'docente' ? 'docente' : 'logged_in';
+    }));
     register_setting('ge_ajustes', 'ge_contact_email', array('type' => 'string', 'sanitize_callback' => 'sanitize_email'));
 });
 function ge_render_settings_page() {
@@ -102,12 +114,21 @@ function ge_render_settings_page() {
         <?php settings_fields('ge_ajustes'); ?>
         <table class="form-table" role="presentation">
           <tr>
+            <th scope="row">Quién puede usar el generador</th>
+            <td>
+              <label><input type="radio" name="ge_access_mode" value="logged_in" <?php checked(ge_access_mode(), 'logged_in'); ?>>
+                <strong>Cualquier persona con sesión iniciada</strong> (por ejemplo con Google). Los límites por hora (60 subidas y 30 generaciones por usuario) acotan el abuso.</label><br>
+              <label><input type="radio" name="ge_access_mode" value="docente" <?php checked(ge_access_mode(), 'docente'); ?>>
+                <strong>Solo docentes habilitados</strong> (rol «Docente (generador)»), a mano o por la lista de abajo.</label>
+            </td>
+          </tr>
+          <tr>
             <th scope="row"><label for="ge_auto_approve">Habilitar automáticamente como docentes</label></th>
             <td>
               <textarea id="ge_auto_approve" name="ge_auto_approve" rows="6" cols="50" class="large-text code"><?php echo esc_textarea(get_option('ge_auto_approve', '')); ?></textarea>
               <p class="description">Una línea por correo (<code>docente@gmail.com</code>) o por dominio (<code>@liceo.edu.uy</code>).
-              Quien ingrese con una cuenta de esa lista recibe el rol «Docente (generador)». El resto queda como Suscriptor
-              y se habilita a mano desde Usuarios. Usalo con ingreso por Google (correo verificado).</p>
+              Quien ingrese con una cuenta de esa lista recibe el rol «Docente (generador)». Solo importa en el modo
+              «Solo docentes habilitados»: el resto queda como Suscriptor y se habilita a mano desde Usuarios. Usalo con ingreso por Google (correo verificado).</p>
             </td>
           </tr>
           <tr>

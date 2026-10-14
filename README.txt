@@ -3,7 +3,7 @@ Contributors: leonardo
 Tags: fisica, educacion, evaluaciones, odt, libreoffice, pandoc
 Requires at least: 5.9
 Tested up to: 6.7
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 License: GPLv2 or later
 
 Banco interactivo de ejercicios y generador de pruebas en formato LibreOffice (.odt) para docentes.
@@ -31,6 +31,10 @@ Este plugin permite a los docentes de Física (y otras asignaturas) subir sus re
 * `[generador_evaluaciones]`: Muestra la interfaz completa de arrastrar y soltar, selección de ejercicios y generador de pruebas.
 
 == Changelog ==
+
+= 1.0.7 =
+* Nuevo ajuste «Quién puede usar el generador» (Ajustes → Generador). Por defecto puede usarlo **cualquier persona con sesión iniciada** (por ejemplo con Google), sin habilitación previa; los límites por hora acotan el abuso. El modo «Solo docentes habilitados» (rol, lista de correos) sigue disponible.
+* La ayuda explica el ingreso según el modo elegido.
 
 = 1.0.6 =
 * Preparado para ingreso con Google u otros accesos sociales: quien se registra queda como Suscriptor y **no** tiene acceso hasta que se lo habilite. Nuevo rol «Docente (generador)» con el permiso `use_generador_evaluaciones`; los usuarios que ya podían editar entradas siguen teniendo acceso.

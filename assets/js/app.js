@@ -26,6 +26,38 @@
     return headers;
   }
 
+  // El nonce embebido en el HTML puede venir de una copia cacheada (WP Super Cache,
+  // CDN) generada para otro usuario o para un visitante anónimo, y entonces la REST
+  // API responde 403 "Cookie check failed". Se pide uno fresco con la cookie de sesión.
+  async function refreshNonce() {
+    if (typeof geConfig === 'undefined' || !geConfig.ajax_url) return false;
+    try {
+      const r = await fetch(geConfig.ajax_url + '?action=rest-nonce', { credentials: 'same-origin', cache: 'no-store' });
+      if (!r.ok) return false;
+      const n = (await r.text()).trim();
+      if (!/^[a-f0-9]{6,20}$/i.test(n)) return false;
+      geConfig.nonce = n;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function apiFetch(endpoint, options) {
+    const build = () => Object.assign({}, options, {
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: getApiHeaders(options.json)
+    });
+    let res = await fetch(getApiUrl(endpoint), build());
+    if (res.status === 403 || res.status === 401) {
+      if (await refreshNonce()) {
+        res = await fetch(getApiUrl(endpoint), build());
+      }
+    }
+    return res;
+  }
+
   function showToast(message, isError = false) {
     let box = document.getElementById("geGlobalToast");
     if (!box) {
@@ -131,9 +163,8 @@
       formData.append('file', file);
 
       try {
-        const res = await fetch(getApiUrl('upload'), {
+        const res = await apiFetch('upload', {
           method: 'POST',
-          headers: getApiHeaders(false),
           body: formData
         });
 
@@ -399,9 +430,9 @@
     };
 
     try {
-      const res = await fetch(getApiUrl('generate'), {
+      const res = await apiFetch('generate', {
         method: 'POST',
-        headers: getApiHeaders(true),
+        json: true,
         body: JSON.stringify(payload)
       });
 

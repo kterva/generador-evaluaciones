@@ -3,7 +3,7 @@
  * Plugin Name: Generador de Evaluaciones de Física
  * Plugin URI: https://culturalibre.edu.uy
  * Description: Banco interactivo de ejercicios y generador de pruebas en formato LibreOffice (.odt) para docentes de Física.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: Leonardo - Cultura Libre
  * Author URI: https://culturalibre.edu.uy
  * License: GPL-2.0+
@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('GE_VERSION', '1.0.1');
+define('GE_VERSION', '1.0.2');
 define('GE_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GE_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('GE_MAX_UPLOAD_BYTES', 15 * 1024 * 1024);
@@ -257,6 +257,14 @@ function ge_render_shortcode($atts) {
     }
     $storage = ge_get_storage();
 
+    // La página lleva un nonce por usuario: que no la cachee WP Super Cache y similares.
+    if (!defined('DONOTCACHEPAGE')) {
+        define('DONOTCACHEPAGE', true);
+    }
+    if (!headers_sent()) {
+        nocache_headers();
+    }
+
     // Encolar estilos
     wp_enqueue_style(
         'ge-styles',
@@ -286,6 +294,7 @@ function ge_render_shortcode($atts) {
     wp_localize_script('ge-app', 'geConfig', array(
         'rest_url' => esc_url_raw(rest_url('generador-evaluaciones/v1/')),
         'nonce' => wp_create_nonce('wp_rest'),
+        'ajax_url' => admin_url('admin-ajax.php'),
         'cache_url' => $storage['cache_url']
     ));
 

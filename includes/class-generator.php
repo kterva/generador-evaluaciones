@@ -165,7 +165,7 @@ class Generador_Evaluaciones_Generator {
         file_put_contents($temp_md, $md_content);
 
         // Nombre de archivo sanitizado
-        $clean_tema = substr(preg_replace('/[^a-zA-Z0-9_-]+/', '_', $tema), 0, 60);
+        $clean_tema = substr(preg_replace('/[^a-zA-Z0-9_-]+/', '_', remove_accents($tema)), 0, 60);
         $clean_tema = trim($clean_tema, '_');
         $filename = 'Evaluacion_' . $clean_tema . '_' . date('Ymd_His') . '_' . wp_generate_password(8, false, false) . '.odt';
         $output_file = $output_dir . '/' . $filename;

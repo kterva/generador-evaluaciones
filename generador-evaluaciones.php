@@ -3,7 +3,7 @@
  * Plugin Name: Generador de Repartidos y Evaluaciones
  * Plugin URI: https://culturalibre.edu.uy
  * Description: Armá repartidos y evaluaciones a partir de tus propios documentos: extrae los ejercicios y las figuras y genera un archivo LibreOffice (.odt) listo para imprimir o editar. Incluye página de ayuda.
- * Version: 1.0.7
+ * Version: 1.0.8
  * Author: Leonardo - Cultura Libre
  * Author URI: https://culturalibre.edu.uy
  * License: GPL-2.0+
@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('GE_VERSION', '1.0.7');
+define('GE_VERSION', '1.0.8');
 define('GE_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GE_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('GE_MAX_UPLOAD_BYTES', 15 * 1024 * 1024);
@@ -162,6 +162,10 @@ function ge_rate_limit($action) {
     return true;
 }
 
+function ge_privacy_url() {
+    return apply_filters('ge_privacy_url', home_url('/politica-de-privacidad/'));
+}
+
 function ge_help_url() {
     return apply_filters('ge_help_url', home_url('/generador-evaluaciones/ayuda/'));
 }
@@ -176,6 +180,15 @@ function ge_rest_permission() {
 
 require_once GE_PLUGIN_DIR . 'includes/class-extractor.php';
 require_once GE_PLUGIN_DIR . 'includes/class-generator.php';
+
+/**
+ * Aviso destacado: los archivos no se guardan en el servidor.
+ */
+function ge_render_privacy_banner() {
+    ob_start();
+    include GE_PLUGIN_DIR . 'templates/privacy-banner.php';
+    return ob_get_clean();
+}
 
 /**
  * Pie de página común (mismo estilo que graficador.culturalibre.edu.uy).
@@ -549,7 +562,7 @@ function ge_render_shortcode($atts) {
         } else {
             $msg = '<p class="ge-notice">Para usar el generador de repartidos y evaluaciones tenés que <a href="' . esc_url(wp_login_url(get_permalink())) . '">iniciar sesión</a> con un usuario docente. ¿Querés saber cómo funciona? Mirá la <a href="' . esc_url(ge_help_url()) . '">ayuda</a>.</p>';
         }
-        return '<div class="ge-app-container">' . $msg . ge_render_footer() . '</div>';
+        return '<div class="ge-app-container">' . $msg . ge_render_privacy_banner() . ge_render_footer() . '</div>';
     }
     $storage = ge_get_storage();
 

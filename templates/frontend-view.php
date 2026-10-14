@@ -15,6 +15,8 @@ if (!defined('ABSPATH')) {
     </div>
   </div>
 
+  <?php echo ge_render_privacy_banner(); ?>
+
   <!-- ZONA DE CARGA MANUAL (DRAG & DROP) -->
   <section class="ge-upload-section">
     <div class="ge-upload-dropzone" id="dropZone">
@@ -25,7 +27,7 @@ if (!defined('ABSPATH')) {
         </div>
         <div class="ge-dropzone-text">
           <h3>Arrastrá acá tus repartidos o pruebas (.odt, .docx, .pdf)</h3>
-          <p class="ge-dropzone-sub">Podés soltar varios archivos a la vez. Los enunciados y figuras se extraerán en segundos.</p>
+          <p class="ge-dropzone-sub">Podés soltar varios archivos a la vez. Los enunciados y figuras se extraerán en segundos. <strong>🔒 Tus archivos no se guardan en el servidor.</strong></p>
         </div>
         <div class="ge-dropzone-actions">
           <button type="button" class="ge-btn ge-btn-outline-primary" onclick="document.getElementById('fileInput').click()">
@@ -126,7 +128,7 @@ if (!defined('ABSPATH')) {
         <div id="generateSuccess" class="ge-generate-result hidden" role="status" aria-live="polite">
           <p id="generateStatus">✅ <strong>¡Evaluación generada con éxito!</strong></p>
           <a id="downloadLink" href="#" class="ge-btn ge-btn-primary ge-btn-block" download>Descargar archivo .odt</a>
-          <p class="ge-generate-hint">Si la descarga no empezó sola, hacé clic en el botón. El archivo se abre con LibreOffice Writer.</p>
+          <p class="ge-generate-hint">Si la descarga no empezó sola, hacé clic en el botón. El archivo se abre con LibreOffice Writer. <strong>🔒 El servidor borra el documento apenas lo descargás.</strong></p>
         </div>
         <div id="generateError" class="ge-generate-error hidden" role="alert"></div>
       </div>

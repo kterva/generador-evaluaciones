@@ -567,7 +567,7 @@
         const bytes = await saveGeneratedFile(data.download_url, data.filename);
         pendingFiles.delete(data.filename);
         cleanupOnServer([data.filename]);
-        setBox('generateStatus', `✅ <strong>¡${DocWord} ${isRep ? 'generado' : 'generada'}!</strong> Se descargó <em>${escapeHtml(data.filename)}</em> (${Math.round(bytes / 102.4) / 10} KB). Buscala en tu carpeta de Descargas.`, true);
+        setBox('generateStatus', `✅ <strong>¡${DocWord} ${isRep ? 'generado' : 'generada'}!</strong> Se descargó <em>${escapeHtml(data.filename)}</em> (${Math.round(bytes / 102.4) / 10} KB). Buscala en tu carpeta de Descargas. 🔒 El documento ya se borró del servidor.`, true);
         showToast(`${DocWord} descargado: ${data.filename}`);
       } catch (dlErr) {
         console.error('❌ Descarga automática falló:', dlErr);

@@ -17,6 +17,8 @@ $app_url = home_url('/generador-evaluaciones/');
 
   <p class="ge-help-cta"><a class="ge-btn ge-btn-primary" href="<?php echo esc_url($app_url); ?>">Ir a la herramienta →</a></p>
 
+  <?php echo ge_render_privacy_banner(); ?>
+
   <section class="ge-help-section">
     <h3>¿Para qué sirve?</h3>
     <p>

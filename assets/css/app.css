@@ -532,3 +532,33 @@
 .ge-notice { padding: 1rem; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; }
 
 .ge-help strong, .ge-help dt { font-weight: 700; }
+
+/* Aviso destacado de privacidad */
+.ge-privacy-banner {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  margin: 1rem 0 1.25rem;
+  padding: 1.1rem 1.25rem;
+  background: #ecfdf5;
+  border: 2px solid #16a34a;
+  border-left-width: 8px;
+  border-radius: 10px;
+  color: #14532d;
+}
+.ge-privacy-icon { font-size: 2.2rem; line-height: 1; }
+.ge-privacy-text { flex: 1; }
+.ge-privacy-banner .ge-privacy-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #166534;
+}
+.ge-privacy-banner ul { margin: 0.25rem 0 0.5rem; padding-left: 1.2rem; font-size: 1rem; line-height: 1.5; }
+.ge-privacy-banner strong { font-weight: 700; }
+.ge-privacy-banner .ge-privacy-more { margin: 0; font-size: 0.9rem; }
+.ge-privacy-banner a { color: #166534; text-decoration: underline; }
+@media (max-width: 600px) {
+  .ge-privacy-banner { flex-direction: column; gap: 0.5rem; }
+}

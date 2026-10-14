@@ -3,7 +3,7 @@ Contributors: leonardo
 Tags: fisica, educacion, evaluaciones, odt, libreoffice, pandoc
 Requires at least: 5.9
 Tested up to: 6.7
-Stable tag: 1.0.10
+Stable tag: 1.0.11
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -32,6 +32,9 @@ Este plugin permite a los docentes de Física (y otras asignaturas) subir sus re
 * `[generador_evaluaciones]`: Muestra la interfaz completa de arrastrar y soltar, selección de ejercicios y generador de pruebas.
 
 == Changelog ==
+
+= 1.0.11 =
+* El recuadro verde de «tus archivos no se guardan» ya no se muestra antes de iniciar sesión: aparece en la herramienta una vez que la persona ingresó (y sigue en la página de ayuda).
 
 = 1.0.10 =
 * El aviso para quien todavía no inició sesión ya no dice «con un usuario docente» cuando el acceso es para cualquier persona con sesión: ahora invita a iniciar sesión con la cuenta de Google o con el usuario, y aclara que es gratis. En el modo «Solo docentes habilitados» el texto anterior se mantiene.

@@ -148,6 +148,9 @@ t('genera un .odt sin título duplicado, sin imágenes ajenas y con subpreguntas
     has($txt, 'a) primera'); $imgs = array(); for ($i = 0; $i < $z->numFiles; $i++) if (strpos($z->getNameIndex($i), 'Pictures/') === 0) $imgs[] = $z->getNameIndex($i);
     eq(count($imgs), 2, 'solo las 2 figuras legítimas, ninguna ruta externa'); $z->close();
     $r2 = Generador_Evaluaciones_Generator::generate_odt(array('tipo' => 'repartido', 'titulo' => 'R', 'ejercicios' => array($exs[0])), $cache, $out, 'http://x/o');
+    // La hoja debe ser A4 (21 x 29,7 cm) y no carta.
+    $z2 = new ZipArchive(); $z2->open("$out/" . $res['filename']); $st = $z2->getFromName('styles.xml'); $z2->close();
+    has($st, 'fo:page-width="21cm"', 'ancho A4'); has($st, 'fo:page-height="29.7cm"', 'alto A4'); hasnt($st, '8.5in', 'no debe quedar tamaño carta');
     has($r2['filename'], 'Repartido_'); $z = new ZipArchive(); $z->open("$out/" . $r2['filename']); hasnt(strip_tags($z->getFromName('content.xml')), 'Calificación', 'el repartido no lleva calificación'); $z->close();
     rrmdir($cache); rrmdir($out);
 });

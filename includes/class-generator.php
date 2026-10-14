@@ -185,7 +185,11 @@ class Generador_Evaluaciones_Generator {
             $pandoc_cmd = 'pandoc';
         }
 
-        $cmd = escapeshellarg($pandoc_cmd) . ' ' . escapeshellarg($temp_md) . ' -o ' . escapeshellarg($output_file) . ' -f markdown-raw_html-raw_attribute-raw_tex-tex_math_dollars 2>&1';
+        // Plantilla con hoja A4 y márgenes de 2 cm (pandoc usa carta por defecto).
+        $reference = dirname(__DIR__) . '/assets/reference-a4.odt';
+        $ref_opt = is_file($reference) ? ' --reference-doc=' . escapeshellarg($reference) : '';
+
+        $cmd = escapeshellarg($pandoc_cmd) . ' ' . escapeshellarg($temp_md) . ' -o ' . escapeshellarg($output_file) . ' -f markdown-raw_html-raw_attribute-raw_tex-tex_math_dollars' . $ref_opt . ' 2>&1';
         $output = array();
         $return_var = 0;
         exec($cmd, $output, $return_var);

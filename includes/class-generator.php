@@ -75,30 +75,46 @@ class Generador_Evaluaciones_Generator {
         return $opt_path;
     }
 
+    /**
+     * Escapa texto libre para que no se interprete como markdown/HTML/imagen de pandoc.
+     */
+    private static function escape_md($text) {
+        $text = wp_strip_all_tags((string) $text, false);
+        $text = str_replace(array("\r\n", "\r"), "\n", $text);
+        // Sin imágenes ni enlaces provistos por el cliente: las figuras se arman solo desde la caché.
+        $text = preg_replace('/!\[[^\]]*\]\([^)]*\)/', '', $text);
+        return preg_replace('/([\\\\`*_{}\[\]<>|$])/', '\\\\$1', $text);
+    }
+
+    private static function one_line($text) {
+        return trim(preg_replace('/\s+/', ' ', self::escape_md($text)));
+    }
+
     public static function generate_odt($data, $cache_dir, $output_dir, $output_url) {
-        $titulo = !empty($data['titulo']) ? trim($data['titulo']) : 'Evaluación de Física';
+        $titulo = !empty($data['titulo']) ? trim((string) $data['titulo']) : 'Evaluación de Física';
         $tema = !empty($data['tema']) ? trim($data['tema']) : 'General';
         $institucion = !empty($data['institucion']) ? trim($data['institucion']) : 'Institución Educativa';
         $curso = !empty($data['curso']) ? trim($data['curso']) : '6to Año';
         $fecha = !empty($data['fecha']) ? trim($data['fecha']) : date('d/m/Y');
         $pautas = !empty($data['pautas']) ? trim($data['pautas']) : '';
-        $ejercicios = !empty($data['ejercicios']) ? $data['ejercicios'] : array();
+        $ejercicios = !empty($data['ejercicios']) && is_array($data['ejercicios']) ? array_slice($data['ejercicios'], 0, 100) : array();
+        $titulo_md = self::one_line($titulo);
 
         $temp_dir = get_temp_dir() . 'ge_' . uniqid();
         wp_mkdir_p($temp_dir);
 
         $md = array();
-        $md[] = "# " . $titulo;
+        $md[] = "# " . $titulo_md;
         $md[] = "";
 
         // Tabla de encabezado institucional
-        $md[] = "| **Institución:** " . $institucion . " | **Curso:** " . $curso . " | **Fecha:** " . $fecha . " |";
+        $md[] = "| **Institución:** " . self::one_line($institucion) . " | **Curso:** " . self::one_line($curso) . " | **Fecha:** " . self::one_line($fecha) . " |";
         $md[] = "| :--- | :--- | :--- |";
         $md[] = "| **Estudiante:** | **Grupo:** | **Calificación:** |";
         $md[] = "";
 
         if (!empty($pautas)) {
-            $md[] = "* **Pautas:** " . $pautas;
+            $md[] = "* **Pautas:** " . self::one_line($pautas);
             $md[] = "";
         }
         $md[] = "---";
@@ -109,7 +125,7 @@ class Generador_Evaluaciones_Generator {
             $md[] = "### Ejercicio " . $count;
             $md[] = "";
 
-            $raw_text = !empty($ex['text']) ? $ex['text'] : '';
+            $raw_text = !empty($ex['text']) && is_string($ex['text']) ? self::escape_md($ex['text']) : '';
             // Limpiar "Ejercicio X:" al inicio para no duplicar
             $clean_body = preg_replace('/^(?:ejercicio|problema|actividad|pregunta)\s*\d+[:\.\-]?\s*/i', '', trim($raw_text));
             $clean_body = preg_replace('/^\d+\s*[\.\-\)]\s*/', '', $clean_body);
@@ -123,12 +139,16 @@ class Generador_Evaluaciones_Generator {
             $md[] = "";
 
             // Imagen asociada
-            $img_name = !empty($ex['image']) ? $ex['image'] : null;
-            $doc_hash = !empty($ex['doc_hash']) ? $ex['doc_hash'] : '';
+            $img_name = !empty($ex['image']) && is_string($ex['image']) ? basename($ex['image']) : null;
+            $doc_hash = !empty($ex['doc_hash']) && is_string($ex['doc_hash']) ? $ex['doc_hash'] : '';
 
-            if (!empty($img_name) && !empty($doc_hash)) {
+            // doc_hash e image vienen del cliente: validar antes de armar una ruta.
+            if (!empty($img_name) && preg_match('/^[a-f0-9]{12}$/', $doc_hash)
+                && preg_match('/^[A-Za-z0-9._-]+\.(png|jpe?g|gif)$/i', $img_name)) {
                 $full_img_path = $cache_dir . '/' . $doc_hash . '/' . $img_name;
-                if (file_exists($full_img_path)) {
+                $real = realpath($full_img_path);
+                $real_cache = realpath($cache_dir);
+                if ($real && $real_cache && strpos($real, $real_cache . DIRECTORY_SEPARATOR) === 0) {
                     $opt_img_path = self::prepare_optimized_image($full_img_path, $temp_dir);
                     $dim_attr = self::get_image_attribute($opt_img_path);
                     $md[] = "![](" . $opt_img_path . ")" . $dim_attr;
@@ -145,9 +165,9 @@ class Generador_Evaluaciones_Generator {
         file_put_contents($temp_md, $md_content);
 
         // Nombre de archivo sanitizado
-        $clean_tema = preg_replace('/[^a-zA-Z0-9_-]+/', '_', $tema);
+        $clean_tema = substr(preg_replace('/[^a-zA-Z0-9_-]+/', '_', $tema), 0, 60);
         $clean_tema = trim($clean_tema, '_');
-        $filename = 'Evaluacion_' . $clean_tema . '_' . date('Ymd_His') . '.odt';
+        $filename = 'Evaluacion_' . $clean_tema . '_' . date('Ymd_His') . '_' . wp_generate_password(8, false, false) . '.odt';
         $output_file = $output_dir . '/' . $filename;
 
         // Comprobar comando pandoc
@@ -157,7 +177,7 @@ class Generador_Evaluaciones_Generator {
             $pandoc_cmd = '/usr/bin/pandoc';
         }
 
-        $cmd = escapeshellcmd($pandoc_cmd) . ' ' . escapeshellarg($temp_md) . ' -o ' . escapeshellarg($output_file) . ' --metadata=title=' . escapeshellarg($titulo) . ' 2>&1';
+        $cmd = escapeshellarg($pandoc_cmd) . ' ' . escapeshellarg($temp_md) . ' -o ' . escapeshellarg($output_file) . ' -f markdown-raw_html-raw_attribute-raw_tex-tex_math_dollars --metadata=title=' . escapeshellarg($titulo) . ' 2>&1';
         $output = array();
         $return_var = 0;
         exec($cmd, $output, $return_var);

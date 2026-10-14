@@ -5,7 +5,11 @@ if (!defined('ABSPATH')) {
 
 class Generador_Evaluaciones_Extractor {
 
-    public static function extract_exercises_from_file($file_path, $cache_dir, $cache_url) {
+    /** Nombre original del archivo subido (en disco se guarda con nombre aleatorio). */
+    private static $source_name = '';
+
+    public static function extract_exercises_from_file($file_path, $cache_dir, $cache_url, $source_name = '') {
+        self::$source_name = $source_name !== '' ? $source_name : basename($file_path);
         $ext = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
         if ($ext === 'odt') {
             return self::extract_from_odt($file_path, $cache_dir, $cache_url);
@@ -17,7 +21,7 @@ class Generador_Evaluaciones_Extractor {
         return array('exercises' => array(), 'images' => array());
     }
 
-    private static function is_exercise_start($line) {
+    private static function is_exercise_start($line, $allow_bare_number = true) {
         $l = trim($line);
         if (empty($l)) return false;
         // Ejercicio 1, Problema 2, Actividad 3, Pregunta 4
@@ -29,7 +33,7 @@ class Generador_Evaluaciones_Extractor {
             return true;
         }
         // Solo número aislado
-        if (preg_match('/^\d{1,2}$/', $l)) {
+        if ($allow_bare_number && preg_match('/^\d{1,2}$/', $l)) {
             return true;
         }
         return false;
@@ -121,7 +125,7 @@ class Generador_Evaluaciones_Extractor {
                         'image' => !empty($p_imgs) ? $p_imgs[0] : null,
                         'images_detected' => $p_imgs,
                         'doc_hash' => $doc_hash,
-                        'source_file' => basename($file_path),
+                        'source_file' => self::$source_name,
                         'all_images' => $all_images,
                         'tipo' => 'subido',
                         'image_url' => !empty($p_imgs) ? $doc_cache_url . '/' . $p_imgs[0] : null
@@ -153,12 +157,12 @@ class Generador_Evaluaciones_Extractor {
         if (empty($exercises) && !empty($all_images)) {
             $exercises[] = array(
                 'id' => $doc_hash . '_1',
-                'title' => basename($file_path),
+                'title' => self::$source_name,
                 'text' => strip_tags($content_xml),
                 'image' => $all_images[0],
                 'images_detected' => $all_images,
                 'doc_hash' => $doc_hash,
-                'source_file' => basename($file_path),
+                'source_file' => self::$source_name,
                 'all_images' => $all_images,
                 'tipo' => 'subido',
                 'image_url' => $doc_cache_url . '/' . $all_images[0]
@@ -233,7 +237,7 @@ class Generador_Evaluaciones_Extractor {
                         'image' => $suggested_img,
                         'images_detected' => $suggested_img ? array($suggested_img) : array(),
                         'doc_hash' => $doc_hash,
-                        'source_file' => basename($file_path),
+                        'source_file' => self::$source_name,
                         'all_images' => $all_images,
                         'tipo' => 'subido',
                         'image_url' => $suggested_img ? $doc_cache_url . '/' . $suggested_img : null
@@ -285,7 +289,7 @@ class Generador_Evaluaciones_Extractor {
             $s = trim($line);
             if (empty($s)) continue;
 
-            if (self::is_exercise_start($s)) {
+            if (self::is_exercise_start($s, false)) {
                 if ($curr_ex && !empty(trim($curr_ex['text']))) {
                     $exercises[] = $curr_ex;
                 }
@@ -299,7 +303,7 @@ class Generador_Evaluaciones_Extractor {
                     'image' => $suggested_img,
                     'images_detected' => $suggested_img ? array($suggested_img) : array(),
                     'doc_hash' => $doc_hash,
-                    'source_file' => basename($file_path),
+                    'source_file' => self::$source_name,
                     'all_images' => $all_images,
                     'tipo' => 'subido',
                     'image_url' => $suggested_img ? $doc_cache_url . '/' . $suggested_img : null

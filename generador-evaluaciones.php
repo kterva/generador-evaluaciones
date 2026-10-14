@@ -3,7 +3,7 @@
  * Plugin Name: Generador de Repartidos y Evaluaciones
  * Plugin URI: https://culturalibre.edu.uy
  * Description: Armá repartidos y evaluaciones a partir de tus propios documentos: extrae los ejercicios y las figuras y genera un archivo LibreOffice (.odt) listo para imprimir o editar. Incluye página de ayuda.
- * Version: 1.0.5
+ * Version: 1.0.6
  * Author: Leonardo - Cultura Libre
  * Author URI: https://culturalibre.edu.uy
  * License: GPL-2.0+
@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('GE_VERSION', '1.0.5');
+define('GE_VERSION', '1.0.6');
 define('GE_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GE_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('GE_MAX_UPLOAD_BYTES', 15 * 1024 * 1024);
@@ -22,10 +22,123 @@ define('GE_MAX_UPLOAD_BYTES', 15 * 1024 * 1024);
 define('GE_TTL_SECONDS', 2 * HOUR_IN_SECONDS);
 
 /**
- * Permiso requerido para usar el generador (filtrable con 'ge_required_capability').
+ * Acceso: pueden usar el generador los usuarios con el permiso propio `use_generador_evaluaciones`
+ * (rol "Docente (generador)") y, por compatibilidad, quienes pueden editar entradas.
+ * Un usuario que solo inició sesión (p. ej. con Google) queda como Suscriptor y NO tiene acceso
+ * hasta que se lo habilite (a mano o por la lista de correos de Ajustes → Generador).
  */
 function ge_can_use() {
-    return current_user_can(apply_filters('ge_required_capability', 'edit_posts'));
+    $caps = apply_filters('ge_allowed_capabilities', array('use_generador_evaluaciones', 'edit_posts'));
+    foreach ($caps as $cap) {
+        if (current_user_can($cap)) return true;
+    }
+    return false;
+}
+
+function ge_contact_email() {
+    $e = get_option('ge_contact_email', 'trujillo.leonardo@gmail.com');
+    return is_email($e) ? $e : 'trujillo.leonardo@gmail.com';
+}
+
+/**
+ * Rol "Docente (generador)": solo lectura + permiso del generador.
+ */
+function ge_ensure_role() {
+    if (!get_role('ge_docente')) {
+        add_role('ge_docente', 'Docente (generador)', array('read' => true, 'use_generador_evaluaciones' => true));
+    }
+}
+add_action('init', 'ge_ensure_role');
+
+/**
+ * Habilitación automática por lista (Ajustes → Generador): una línea por correo o por dominio (@institucion.edu.uy).
+ * Solo se aplica a usuarios que son únicamente Suscriptores, y conviene usarla con ingreso por Google
+ * (que entrega el correo ya verificado).
+ */
+function ge_email_in_allowlist($email) {
+    $email = strtolower(trim((string) $email));
+    if ($email === '' || !is_email($email)) return false;
+    $domain = '@' . substr(strrchr($email, '@'), 1);
+    $lines = preg_split('/[\r\n,;\s]+/', strtolower((string) get_option('ge_auto_approve', '')), -1, PREG_SPLIT_NO_EMPTY);
+    foreach ($lines as $l) {
+        if ($l === $email || $l === $domain) return true;
+    }
+    return false;
+}
+
+function ge_maybe_auto_approve($user) {
+    if (!($user instanceof WP_User) || !$user->exists()) return;
+    if ($user->roles !== array('subscriber') && $user->roles !== array()) return;
+    if (ge_email_in_allowlist($user->user_email)) {
+        $user->set_role('ge_docente');
+    }
+}
+add_action('user_register', function ($user_id) { ge_maybe_auto_approve(get_user_by('id', $user_id)); });
+add_action('wp_login', function ($login, $user) { ge_maybe_auto_approve($user); }, 10, 2);
+
+/**
+ * Página de ajustes: Ajustes → Generador.
+ */
+add_action('admin_menu', function () {
+    add_options_page('Generador de Repartidos y Evaluaciones', 'Generador', 'manage_options', 'ge-ajustes', 'ge_render_settings_page');
+});
+add_action('admin_init', function () {
+    register_setting('ge_ajustes', 'ge_auto_approve', array('type' => 'string', 'sanitize_callback' => function ($v) {
+        $lines = preg_split('/[\r\n,;\s]+/', strtolower((string) $v), -1, PREG_SPLIT_NO_EMPTY);
+        $ok = array();
+        foreach ($lines as $l) {
+            if (is_email($l) || preg_match('/^@[a-z0-9.-]+\.[a-z]{2,}$/', $l)) $ok[] = $l;
+        }
+        return implode("\n", array_unique($ok));
+    }));
+    register_setting('ge_ajustes', 'ge_contact_email', array('type' => 'string', 'sanitize_callback' => 'sanitize_email'));
+});
+function ge_render_settings_page() {
+    if (!current_user_can('manage_options')) return;
+    ?>
+    <div class="wrap">
+      <h1>Generador de Repartidos y Evaluaciones</h1>
+      <form method="post" action="options.php">
+        <?php settings_fields('ge_ajustes'); ?>
+        <table class="form-table" role="presentation">
+          <tr>
+            <th scope="row"><label for="ge_auto_approve">Habilitar automáticamente como docentes</label></th>
+            <td>
+              <textarea id="ge_auto_approve" name="ge_auto_approve" rows="6" cols="50" class="large-text code"><?php echo esc_textarea(get_option('ge_auto_approve', '')); ?></textarea>
+              <p class="description">Una línea por correo (<code>docente@gmail.com</code>) o por dominio (<code>@liceo.edu.uy</code>).
+              Quien ingrese con una cuenta de esa lista recibe el rol «Docente (generador)». El resto queda como Suscriptor
+              y se habilita a mano desde Usuarios. Usalo con ingreso por Google (correo verificado).</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row"><label for="ge_contact_email">Correo de contacto</label></th>
+            <td>
+              <input type="email" id="ge_contact_email" name="ge_contact_email" class="regular-text" value="<?php echo esc_attr(ge_contact_email()); ?>">
+              <p class="description">Se muestra en la ayuda, en el pie y en el aviso a quienes todavía no están habilitados.</p>
+            </td>
+          </tr>
+        </table>
+        <?php submit_button(); ?>
+      </form>
+    </div>
+    <?php
+}
+
+/**
+ * Límite de uso por usuario y por hora (filtrable con 'ge_rate_limits'). Los administradores quedan exentos.
+ */
+function ge_rate_limit($action) {
+    if (current_user_can('manage_options')) return true;
+    $limits = apply_filters('ge_rate_limits', array('upload' => 60, 'generate' => 30));
+    $max = isset($limits[$action]) ? (int) $limits[$action] : 0;
+    if ($max <= 0) return true;
+    $key = 'ge_rl_' . $action . '_' . get_current_user_id();
+    $n = (int) get_transient($key);
+    if ($n >= $max) {
+        return new WP_Error('rate_limited', 'Alcanzaste el límite de uso por hora. Probá de nuevo en un rato.', array('status' => 429));
+    }
+    set_transient($key, $n + 1, HOUR_IN_SECONDS);
+    return true;
 }
 
 function ge_help_url() {
@@ -33,10 +146,11 @@ function ge_help_url() {
 }
 
 function ge_rest_permission() {
-    if (!ge_can_use()) {
-        return new WP_Error('rest_forbidden', 'Necesitás iniciar sesión con un usuario docente para usar el generador.', array('status' => rest_authorization_required_code()));
+    if (ge_can_use()) return true;
+    if (is_user_logged_in()) {
+        return new WP_Error('rest_forbidden', 'Tu cuenta todavía no está habilitada como docente.', array('status' => 403));
     }
-    return true;
+    return new WP_Error('rest_forbidden', 'Necesitás iniciar sesión con un usuario docente para usar el generador.', array('status' => rest_authorization_required_code()));
 }
 
 require_once GE_PLUGIN_DIR . 'includes/class-extractor.php';
@@ -233,6 +347,8 @@ function ge_register_rest_routes() {
  * Endpoint REST: /upload
  */
 function ge_rest_upload_handler($request) {
+    $rl = ge_rate_limit('upload');
+    if (is_wp_error($rl)) return $rl;
     $files = $request->get_file_params();
     if (empty($files) || !isset($files['file'])) {
         return new WP_Error('no_file', 'No se recibió ningún archivo.', array('status' => 400));
@@ -343,6 +459,8 @@ function ge_rest_keepalive_handler($request) {
  * Endpoint REST: /generate
  */
 function ge_rest_generate_handler($request) {
+    $rl = ge_rate_limit('generate');
+    if (is_wp_error($rl)) return $rl;
     $params = $request->get_json_params();
     if (empty($params) || empty($params['ejercicios'])) {
         return new WP_Error('no_data', 'No se recibieron ejercicios para armar la prueba.', array('status' => 400));
@@ -399,7 +517,18 @@ add_shortcode('generador_evaluaciones', 'ge_render_shortcode');
 function ge_render_shortcode($atts) {
     if (!ge_can_use()) {
         ge_enqueue_styles();
-        return '<div class="ge-app-container"><p class="ge-notice">Para usar el generador de repartidos y evaluaciones tenés que <a href="' . esc_url(wp_login_url(get_permalink())) . '">iniciar sesión</a> con un usuario docente. ¿Querés saber cómo funciona? Mirá la <a href="' . esc_url(ge_help_url()) . '">ayuda</a>.</p>' . ge_render_footer() . '</div>';
+        if (is_user_logged_in()) {
+            $u = wp_get_current_user();
+            $mail = ge_contact_email();
+            $subject = rawurlencode('Habilitación como docente');
+            $body = rawurlencode('Hola, quiero usar el Generador de Repartidos y Evaluaciones. Mi cuenta es ' . $u->user_email . '.');
+            $msg = '<p class="ge-notice"><strong>Hola, ' . esc_html($u->display_name) . '.</strong> Tu cuenta (' . esc_html($u->user_email) . ') todavía no está habilitada como docente. '
+                 . 'Pedí la habilitación escribiendo a <a href="mailto:' . esc_attr($mail) . '?subject=' . $subject . '&body=' . $body . '">' . esc_html($mail) . '</a> '
+                 . 'y te avisamos cuando esté lista. Mientras tanto, mirá la <a href="' . esc_url(ge_help_url()) . '">ayuda</a>.</p>';
+        } else {
+            $msg = '<p class="ge-notice">Para usar el generador de repartidos y evaluaciones tenés que <a href="' . esc_url(wp_login_url(get_permalink())) . '">iniciar sesión</a> con un usuario docente. ¿Querés saber cómo funciona? Mirá la <a href="' . esc_url(ge_help_url()) . '">ayuda</a>.</p>';
+        }
+        return '<div class="ge-app-container">' . $msg . ge_render_footer() . '</div>';
     }
     $storage = ge_get_storage();
 

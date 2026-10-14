@@ -13,6 +13,6 @@ if (!defined('ABSPATH')) {
   <p class="ge-footer-version">Versión <?php echo esc_html(GE_VERSION); ?> · <a href="<?php echo esc_url(ge_help_url()); ?>">Ayuda</a></p>
   <p class="ge-footer-version">
     ¡Contribuciones y sugerencias son bienvenidas! 🚀 Escribime a
-    <a href="mailto:trujillo.leonardo@gmail.com">trujillo.leonardo@gmail.com</a>
+    <a href="mailto:<?php echo esc_attr(ge_contact_email()); ?>"><?php echo esc_html(ge_contact_email()); ?></a>
   </p>
 </footer>

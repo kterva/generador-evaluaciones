@@ -32,12 +32,17 @@ $app_url = home_url('/generador-evaluaciones/');
   </section>
 
   <section class="ge-help-section">
-    <h3>¿Quién puede usarla?</h3>
+    <h3>¿Quién puede usarla y cómo ingreso?</h3>
     <p>
-      La herramienta es de uso gratuito para docentes y requiere <strong>iniciar sesión con un usuario docente</strong>.
-      Si todavía no tenés uno, escribinos a
-      <a href="mailto:trujillo.leonardo@gmail.com">trujillo.leonardo@gmail.com</a> para pedirlo.
+      La herramienta es de uso gratuito para <strong>docentes</strong>. Para usarla necesitás una cuenta en este sitio
+      y que esté <strong>habilitada como docente</strong>:
     </p>
+    <ol>
+      <li><strong>Iniciá sesión</strong> en el sitio, con tu usuario o con tu cuenta de Google si el botón está disponible. Solo se usa tu nombre y tu correo; no se accede a nada más de tu cuenta.</li>
+      <li><strong>Pedí la habilitación</strong> escribiendo a <a href="mailto:<?php echo esc_attr(ge_contact_email()); ?>"><?php echo esc_html(ge_contact_email()); ?></a>
+        (si tu institución ya está acordada, se habilita sola al ingresar).</li>
+      <li>Cuando te habiliten, volvé a esta página: vas a ver la herramienta.</li>
+    </ol>
   </section>
 
   <section class="ge-help-section">

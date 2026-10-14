@@ -3,7 +3,7 @@
  * Plugin Name: Generador de Evaluaciones de Física
  * Plugin URI: https://culturalibre.edu.uy
  * Description: Banco interactivo de ejercicios y generador de pruebas en formato LibreOffice (.odt) para docentes de Física.
- * Version: 1.0.3
+ * Version: 1.0.4
  * Author: Leonardo - Cultura Libre
  * Author URI: https://culturalibre.edu.uy
  * License: GPL-2.0+
@@ -14,11 +14,12 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('GE_VERSION', '1.0.3');
+define('GE_VERSION', '1.0.4');
 define('GE_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GE_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('GE_MAX_UPLOAD_BYTES', 15 * 1024 * 1024);
-define('GE_RETENTION_DAYS', 7);
+// Nada persiste: el archivo subido se borra al extraer; figuras y .odt viven como mucho GE_TTL_SECONDS.
+define('GE_TTL_SECONDS', 2 * HOUR_IN_SECONDS);
 
 /**
  * Permiso requerido para usar el generador (filtrable con 'ge_required_capability').
@@ -44,53 +45,93 @@ register_activation_hook(__FILE__, 'ge_plugin_activate');
 function ge_plugin_activate() {
     $upload_dir = wp_upload_dir();
     $base_dir = $upload_dir['basedir'] . '/generador_evaluaciones';
-    wp_mkdir_p($base_dir . '/uploads');
     wp_mkdir_p($base_dir . '/cache');
     wp_mkdir_p($base_dir . '/output');
 
     // Archivo index.php de protección
     $index_file = '<?php // Silence is golden';
     @file_put_contents($base_dir . '/index.php', $index_file);
-    @file_put_contents($base_dir . '/uploads/index.php', $index_file);
     @file_put_contents($base_dir . '/cache/index.php', $index_file);
     @file_put_contents($base_dir . '/output/index.php', $index_file);
     // Apache: sin listado ni ejecución. En nginx ver nginx-ejemplo.conf.
-    @file_put_contents($base_dir . '/uploads/.htaccess', "Require all denied\n");
     @file_put_contents($base_dir . '/.htaccess', "Options -Indexes\n<FilesMatch \"\\.php$\">\nRequire all denied\n</FilesMatch>\n");
 
-    if (!wp_next_scheduled('ge_cleanup_event')) {
-        wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', 'ge_cleanup_event');
-    }
+    ge_ensure_cleanup_schedule();
 }
 
 register_deactivation_hook(__FILE__, function () {
     wp_clear_scheduled_hook('ge_cleanup_event');
 });
 
-// Al actualizar copiando archivos no corre el hook de activación: asegurar la tarea programada.
-add_action('init', function () {
-    if (!wp_next_scheduled('ge_cleanup_event')) {
-        wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', 'ge_cleanup_event');
+// Limpieza cada hora. Se reprograma también al actualizar copiando archivos (no corre el hook de activación)
+// y migra el evento diario de la versión anterior.
+function ge_ensure_cleanup_schedule() {
+    $ev = wp_get_scheduled_event('ge_cleanup_event');
+    if ($ev && $ev->schedule !== 'hourly') {
+        wp_clear_scheduled_hook('ge_cleanup_event');
+        $ev = false;
     }
-});
+    if (!$ev) {
+        wp_schedule_event(time() + 300, 'hourly', 'ge_cleanup_event');
+    }
+}
+add_action('init', 'ge_ensure_cleanup_schedule');
 
 /**
- * Limpieza diaria: borra uploads, caché y salidas más viejos que GE_RETENTION_DAYS.
+ * Limpieza: figuras extraídas y .odt generados no duran más de GE_TTL_SECONDS.
+ * La carpeta uploads/ (versiones anteriores guardaban ahí los archivos subidos) se vacía casi de inmediato.
  */
 add_action('ge_cleanup_event', 'ge_cleanup_storage');
 function ge_cleanup_storage() {
     $storage = ge_get_storage();
-    $limit = time() - GE_RETENTION_DAYS * DAY_IN_SECONDS;
-    foreach (array($storage['upload_dir'], $storage['cache_dir'], $storage['output_dir']) as $dir) {
+    $base = dirname($storage['cache_dir']);
+    $now = time();
+    $targets = array(
+        $storage['cache_dir']  => GE_TTL_SECONDS,
+        $storage['output_dir'] => GE_TTL_SECONDS,
+        $base . '/uploads'     => 15 * MINUTE_IN_SECONDS,
+    );
+    foreach ($targets as $dir => $ttl) {
         if (!is_dir($dir)) continue;
         $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
         foreach ($it as $f) {
             $name = $f->getFilename();
             if ($name === 'index.php' || $name === '.htaccess') continue;
-            if ($f->getMTime() >= $limit) continue;
-            $f->isDir() ? @rmdir($f->getPathname()) : @unlink($f->getPathname());
+            if ($f->isDir()) {
+                // Al vaciarse, la carpeta renueva su fecha: se borra si quedó vacía y no es recién creada.
+                if ($f->getMTime() < $now - 5 * MINUTE_IN_SECONDS) @rmdir($f->getPathname());
+                continue;
+            }
+            if ($f->getMTime() < $now - $ttl) @unlink($f->getPathname());
         }
     }
+}
+
+/**
+ * Renueva la fecha de las figuras de un documento para que la limpieza no las borre
+ * mientras el docente sigue armando evaluaciones con esos archivos.
+ */
+function ge_touch_cache_dir($hash, $cache_dir) {
+    if (!is_string($hash) || !preg_match('/^[a-f0-9]{12}$/', $hash)) return;
+    $dir = $cache_dir . '/' . $hash;
+    if (!is_dir($dir)) return;
+    foreach (scandir($dir) as $f) {
+        if ($f !== '.' && $f !== '..') @touch($dir . '/' . basename($f));
+    }
+    @touch($dir);
+}
+
+/**
+ * Borra una carpeta de figuras (cache/<hash>) o un .odt generado, validando el nombre.
+ */
+function ge_delete_cache_dir($hash, $cache_dir) {
+    if (!is_string($hash) || !preg_match('/^[a-f0-9]{12}$/', $hash)) return;
+    $dir = $cache_dir . '/' . $hash;
+    if (!is_dir($dir)) return;
+    foreach (scandir($dir) as $f) {
+        if ($f !== '.' && $f !== '..') @unlink($dir . '/' . basename($f));
+    }
+    @rmdir($dir);
 }
 
 /**
@@ -124,6 +165,18 @@ function ge_register_rest_routes() {
     register_rest_route('generador-evaluaciones/v1', '/generate', array(
         'methods' => 'POST',
         'callback' => 'ge_rest_generate_handler',
+        'permission_callback' => 'ge_rest_permission'
+    ));
+
+    register_rest_route('generador-evaluaciones/v1', '/cleanup', array(
+        'methods' => 'POST',
+        'callback' => 'ge_rest_cleanup_handler',
+        'permission_callback' => 'ge_rest_permission'
+    ));
+
+    register_rest_route('generador-evaluaciones/v1', '/keepalive', array(
+        'methods' => 'POST',
+        'callback' => 'ge_rest_keepalive_handler',
         'permission_callback' => 'ge_rest_permission'
     ));
 
@@ -176,24 +229,22 @@ function ge_rest_upload_handler($request) {
     }
 
     $storage = ge_get_storage();
-    wp_mkdir_p($storage['upload_dir']);
     wp_mkdir_p($storage['cache_dir']);
 
-    // Nombre en disco aleatorio: evita pisar archivos y que se adivine la URL.
-    $dest_path = $storage['upload_dir'] . '/' . wp_generate_password(16, false, false) . '.' . $ext;
+    // Archivo temporal fuera de uploads/ y de la web, con nombre aleatorio; se borra siempre al terminar.
+    $tmp_path = get_temp_dir() . 'ge_' . wp_generate_password(16, false, false) . '.' . $ext;
     $filename = $orig_name;
-    if (!move_uploaded_file($uploaded_file['tmp_name'], $dest_path)) {
-        return new WP_Error('upload_error', 'No se pudo guardar el archivo en el servidor.', array('status' => 500));
+    if (!move_uploaded_file($uploaded_file['tmp_name'], $tmp_path)) {
+        return new WP_Error('upload_error', 'No se pudo procesar el archivo en el servidor.', array('status' => 500));
     }
 
     try {
         $result = Generador_Evaluaciones_Extractor::extract_exercises_from_file(
-            $dest_path,
+            $tmp_path,
             $storage['cache_dir'],
             $storage['cache_url'],
             $filename
         );
-        @unlink($dest_path);
 
         return rest_ensure_response(array(
             'status' => 'ok',
@@ -203,9 +254,47 @@ function ge_rest_upload_handler($request) {
             'total_images' => count($result['images'])
         ));
     } catch (Exception $e) {
-        @unlink($dest_path);
         return new WP_Error('extractor_error', $e->getMessage(), array('status' => 500));
+    } finally {
+        @unlink($tmp_path);
     }
+}
+
+/**
+ * Endpoint REST: /cleanup — el navegador pide borrar lo que ya no necesita
+ * (figuras de los documentos subidos y el .odt ya descargado).
+ */
+function ge_rest_cleanup_handler($request) {
+    $params = $request->get_json_params();
+    if (!is_array($params)) $params = array();
+    $storage = ge_get_storage();
+
+    $hashes = isset($params['hashes']) && is_array($params['hashes']) ? array_slice($params['hashes'], 0, 50) : array();
+    foreach ($hashes as $h) {
+        ge_delete_cache_dir($h, $storage['cache_dir']);
+    }
+
+    $files = isset($params['files']) && is_array($params['files']) ? array_slice($params['files'], 0, 20) : array();
+    foreach ($files as $f) {
+        if (is_string($f) && preg_match('/^Evaluacion_[A-Za-z0-9_-]+\.odt$/', $f)) {
+            @unlink($storage['output_dir'] . '/' . $f);
+        }
+    }
+
+    return rest_ensure_response(array('status' => 'ok'));
+}
+
+/**
+ * Endpoint REST: /keepalive — latido de la página abierta: mantiene las figuras cargadas.
+ */
+function ge_rest_keepalive_handler($request) {
+    $params = $request->get_json_params();
+    $storage = ge_get_storage();
+    $hashes = is_array($params) && isset($params['hashes']) && is_array($params['hashes']) ? array_slice($params['hashes'], 0, 50) : array();
+    foreach ($hashes as $h) {
+        ge_touch_cache_dir($h, $storage['cache_dir']);
+    }
+    return rest_ensure_response(array('status' => 'ok'));
 }
 
 /**
@@ -219,6 +308,13 @@ function ge_rest_generate_handler($request) {
 
     $storage = ge_get_storage();
     wp_mkdir_p($storage['output_dir']);
+
+    // Se pueden armar varias evaluaciones con los mismos archivos: renovar las figuras en uso.
+    if (is_array($params['ejercicios'])) {
+        foreach ($params['ejercicios'] as $ex) {
+            if (is_array($ex) && isset($ex['doc_hash'])) ge_touch_cache_dir($ex['doc_hash'], $storage['cache_dir']);
+        }
+    }
 
     try {
         $res = Generador_Evaluaciones_Generator::generate_odt(

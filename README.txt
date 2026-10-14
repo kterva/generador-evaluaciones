@@ -3,7 +3,7 @@ Contributors: leonardo
 Tags: fisica, educacion, evaluaciones, odt, libreoffice, pandoc
 Requires at least: 5.9
 Tested up to: 6.7
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPLv2 or later
 
 Banco interactivo de ejercicios y generador de pruebas en formato LibreOffice (.odt) para docentes.
@@ -22,7 +22,7 @@ Este plugin permite a los docentes de Física (y otras asignaturas) subir sus re
 
 4. Asegurarse de que el servidor tenga instalado Pandoc (`sudo apt install pandoc`).
 
-5. Solo pueden usarlo usuarios con sesión iniciada y permiso `edit_posts` (filtrable con `ge_required_capability`). Máximo 15 MB por archivo; los archivos subidos, la caché y las salidas se borran a los 7 días.
+5. Solo pueden usarlo usuarios con sesión iniciada y permiso `edit_posts` (filtrable con `ge_required_capability`). Máximo 15 MB por archivo; los archivos subidos, la caché y las salidas son temporales (ver Changelog 1.0.4).
 6. En nginx, bloquear la carpeta de trabajo con las reglas de `nginx-ejemplo.conf`.
 
 == Shortcodes ==
@@ -30,6 +30,12 @@ Este plugin permite a los docentes de Física (y otras asignaturas) subir sus re
 * `[generador_evaluaciones]`: Muestra la interfaz completa de arrastrar y soltar, selección de ejercicios y generador de pruebas.
 
 == Changelog ==
+
+= 1.0.4 =
+* Nada persiste en el servidor: el archivo subido se procesa desde la carpeta temporal del sistema y se borra siempre al terminar (también si falla); el .odt generado se borra apenas el navegador lo descarga; las figuras extraídas se borran al cerrar o recargar la página.
+* Respaldo: una limpieza cada hora (antes diaria) borra figuras y .odt de más de 2 horas y cualquier resto en `uploads/` de más de 15 minutos, incluidos los dejados por versiones anteriores.
+* Se pueden armar varias evaluaciones con los mismos archivos cargados: las figuras se conservan mientras la página esté abierta (latido cada 15 minutos y al generar), y el botón de descarga vuelve a guardar el archivo desde la memoria del navegador.
+* Nuevos endpoints `/cleanup` y `/keepalive`, con los mismos permisos que el resto.
 
 = 1.0.3 =
 * La evaluación generada se descarga sola al terminar (se baja el archivo con `fetch` y se guarda con nombre y tipo correctos), sin depender de `target="_blank"`.

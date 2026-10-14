@@ -179,6 +179,7 @@
 
         const data = await res.json();
         const exs = data.exercises || [];
+        exs.forEach(e => { if (e.doc_hash) usedHashes.add(e.doc_hash); });
 
         if (exs.length === 0) {
           showToast(`No se detectaron enunciados separados en "${file.name}".`, true);
@@ -409,12 +410,9 @@
 
   // Descarga el archivo generado y lo guarda con un clic programático. Devuelve true si
   // el navegador recibió el archivo completo; si no, el llamador deja el enlace manual.
-  async function saveGeneratedFile(url, filename) {
-    const res = await fetch(url, { credentials: 'same-origin', cache: 'no-store' });
-    if (!res.ok) throw new Error(`el servidor respondió ${res.status}`);
-    const buf = await res.arrayBuffer();
-    if (!buf.byteLength) throw new Error('el archivo llegó vacío');
-    const blob = new Blob([buf], { type: 'application/vnd.oasis.opendocument.text' });
+  const savedBlobs = {};
+
+  function triggerSave(blob, filename) {
     const objUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = objUrl;
@@ -424,8 +422,57 @@
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(objUrl), 60000);
+  }
+
+  async function saveGeneratedFile(url, filename) {
+    // Si ya se bajó una vez, el servidor lo borró: se vuelve a guardar desde la memoria del navegador.
+    if (savedBlobs[filename]) {
+      triggerSave(savedBlobs[filename], filename);
+      return savedBlobs[filename].size;
+    }
+    const res = await fetch(url, { credentials: 'same-origin', cache: 'no-store' });
+    if (!res.ok) throw new Error(`el servidor respondió ${res.status}`);
+    const buf = await res.arrayBuffer();
+    if (!buf.byteLength) throw new Error('el archivo llegó vacío');
+    const blob = new Blob([buf], { type: 'application/vnd.oasis.opendocument.text' });
+    savedBlobs[filename] = blob;
+    triggerSave(blob, filename);
     return buf.byteLength;
   }
+
+  // Nada debe quedar en el servidor: se pide borrar las figuras extraídas y los .odt ya descargados.
+  const usedHashes = new Set();
+  const pendingFiles = new Set();
+
+  function cleanupPayload(extra) {
+    return JSON.stringify({ hashes: Array.from(usedHashes), files: Array.from(pendingFiles).concat(extra || []) });
+  }
+
+  function cleanupOnServer(files) {
+    return apiFetch('cleanup', { method: 'POST', json: true, body: JSON.stringify({ files: files }) }).catch(() => {});
+  }
+
+  // Al cerrar o recargar la página: borrar figuras y archivos pendientes (sendBeacon sobrevive al cierre).
+  window.addEventListener('pagehide', () => {
+    if (!usedHashes.size && !pendingFiles.size) return;
+    if (typeof geConfig === 'undefined' || !geConfig.nonce) return;
+    const url = getApiUrl('cleanup') + (getApiUrl('cleanup').includes('?') ? '&' : '?') + '_wpnonce=' + encodeURIComponent(geConfig.nonce);
+    try {
+      navigator.sendBeacon(url, new Blob([cleanupPayload()], { type: 'application/json' }));
+    } catch (_) {}
+  });
+
+  // Latido: mientras la página esté abierta con archivos cargados, el servidor conserva sus figuras
+  // (se pueden armar varias evaluaciones con los mismos archivos).
+  setInterval(() => {
+    if (!usedHashes.size || document.hidden) return;
+    apiFetch('keepalive', { method: 'POST', json: true, body: JSON.stringify({ hashes: Array.from(usedHashes) }) }).catch(() => {});
+  }, 15 * 60 * 1000);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && usedHashes.size) {
+      apiFetch('keepalive', { method: 'POST', json: true, body: JSON.stringify({ hashes: Array.from(usedHashes) }) }).catch(() => {});
+    }
+  });
 
   function setBox(id, html, visible) {
     const el = document.getElementById(id);
@@ -474,6 +521,7 @@
       }
 
       const data = await res.json();
+      pendingFiles.add(data.filename);
       const dlLink = document.getElementById('downloadLink');
       if (dlLink) {
         dlLink.href = data.download_url;
@@ -493,6 +541,8 @@
       setBox('generateProgress', null, false);
       try {
         const bytes = await saveGeneratedFile(data.download_url, data.filename);
+        pendingFiles.delete(data.filename);
+        cleanupOnServer([data.filename]);
         setBox('generateStatus', `✅ <strong>¡Evaluación generada!</strong> Se descargó <em>${escapeHtml(data.filename)}</em> (${Math.round(bytes / 102.4) / 10} KB). Buscala en tu carpeta de Descargas.`, true);
         showToast(`Evaluación descargada: ${data.filename}`);
       } catch (dlErr) {

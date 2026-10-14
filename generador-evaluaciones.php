@@ -3,7 +3,7 @@
  * Plugin Name: Generador de Repartidos y Evaluaciones
  * Plugin URI: https://culturalibre.edu.uy
  * Description: Armá repartidos y evaluaciones a partir de tus propios documentos: extrae los ejercicios y las figuras y genera un archivo LibreOffice (.odt) listo para imprimir o editar. Incluye página de ayuda.
- * Version: 1.0.9
+ * Version: 1.0.10
  * Author: Leonardo - Cultura Libre
  * Author URI: https://culturalibre.edu.uy
  * License: GPL-3.0-or-later
@@ -33,7 +33,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('GE_VERSION', '1.0.9');
+define('GE_VERSION', '1.0.10');
 define('GE_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GE_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('GE_MAX_UPLOAD_BYTES', 15 * 1024 * 1024);
@@ -583,7 +583,12 @@ function ge_render_shortcode($atts) {
                  . 'Pedí la habilitación escribiendo a <a href="mailto:' . esc_attr($mail) . '?subject=' . $subject . '&body=' . $body . '">' . esc_html($mail) . '</a> '
                  . 'y te avisamos cuando esté lista. Mientras tanto, mirá la <a href="' . esc_url(ge_help_url()) . '">ayuda</a>.</p>';
         } else {
-            $msg = '<p class="ge-notice">Para usar el generador de repartidos y evaluaciones tenés que <a href="' . esc_url(wp_login_url(get_permalink())) . '">iniciar sesión</a> con un usuario docente. ¿Querés saber cómo funciona? Mirá la <a href="' . esc_url(ge_help_url()) . '">ayuda</a>.</p>';
+            $login = esc_url(wp_login_url(get_permalink()));
+            if (ge_access_mode() === 'logged_in') {
+                $msg = '<p class="ge-notice">Para usar el generador de repartidos y evaluaciones, <a href="' . $login . '">iniciá sesión</a> con tu cuenta de Google o con tu usuario. Es gratis. ¿Querés saber cómo funciona? Mirá la <a href="' . esc_url(ge_help_url()) . '">ayuda</a>.</p>';
+            } else {
+                $msg = '<p class="ge-notice">Para usar el generador de repartidos y evaluaciones tenés que <a href="' . $login . '">iniciar sesión</a> con un usuario docente. ¿Querés saber cómo funciona? Mirá la <a href="' . esc_url(ge_help_url()) . '">ayuda</a>.</p>';
+            }
         }
         return '<div class="ge-app-container">' . $msg . ge_render_privacy_banner() . ge_render_footer() . '</div>';
     }

@@ -422,7 +422,21 @@
     setTimeout(() => URL.revokeObjectURL(objUrl), 60000);
   }
 
+  // La URL que informa el servidor puede venir con http:// si el sitio está configurado así; el pedido
+  // se hace siempre al mismo origen que la página (evita el bloqueo por contenido mixto).
+  function sameOriginUrl(u) {
+    try {
+      const x = new URL(u, window.location.href);
+      x.protocol = window.location.protocol;
+      x.host = window.location.host;
+      return x.toString();
+    } catch (_) {
+      return u;
+    }
+  }
+
   async function saveGeneratedFile(url, filename) {
+    url = sameOriginUrl(url);
     // Si ya se bajó una vez, el servidor lo borró: se vuelve a guardar desde la memoria del navegador.
     if (savedBlobs[filename]) {
       triggerSave(savedBlobs[filename], filename);
@@ -504,16 +518,19 @@
 
     const isRep = document.getElementById('examType')?.value === 'repartido';
     const docWord = isRep ? 'repartido' : 'evaluación';
+    const art = isRep ? 'el' : 'la';
+    const Art = isRep ? 'El' : 'La';
+    const doneWord = isRep ? 'descargado' : 'descargada';
     const DocWord = isRep ? 'Repartido' : 'Evaluación';
 
     const btn = document.getElementById('btnGenerate');
     const oldHtml = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = `⏳ Generando el ${docWord}...`;
+    btn.innerHTML = `⏳ Generando ${art} ${docWord}...`;
 
     setBox('generateSuccess', null, false);
     setBox('generateError', null, false);
-    setBox('generateProgress', `⏳ Armando el ${docWord}, puede tardar unos segundos...`, true);
+    setBox('generateProgress', `⏳ Armando ${art} ${docWord}, puede tardar unos segundos...`, true);
 
     const payload = {
       tipo: document.getElementById('examType')?.value === 'repartido' ? 'repartido' : 'evaluacion',
@@ -546,7 +563,7 @@
       pendingFiles.add(data.filename);
       const dlLink = document.getElementById('downloadLink');
       if (dlLink) {
-        dlLink.href = data.download_url;
+        dlLink.href = sameOriginUrl(data.download_url);
         dlLink.setAttribute('download', data.filename);
         dlLink.innerText = `Descargar ${data.filename} (${data.size_kb} KB)`;
         // Mismo guardado que el automático, con el enlace directo como respaldo.
@@ -555,7 +572,7 @@
           try {
             await saveGeneratedFile(data.download_url, data.filename);
           } catch (_) {
-            window.location.href = data.download_url;
+            window.location.href = sameOriginUrl(data.download_url);
           }
         };
       }
@@ -566,18 +583,18 @@
         pendingFiles.delete(data.filename);
         cleanupOnServer([data.filename]);
         setBox('generateStatus', `✅ <strong>¡${DocWord} ${isRep ? 'generado' : 'generada'}!</strong> Se descargó <em>${escapeHtml(data.filename)}</em> (${Math.round(bytes / 102.4) / 10} KB). Buscala en tu carpeta de Descargas. 🔒 El documento ya se borró del servidor.`, true);
-        showToast(`${DocWord} descargado: ${data.filename}`);
+        showToast(`${DocWord} ${doneWord}: ${data.filename}`);
       } catch (dlErr) {
         console.error('❌ Descarga automática falló:', dlErr);
-        setBox('generateStatus', `⚠️ <strong>El ${docWord} se generó, pero la descarga automática falló</strong> (${escapeHtml(dlErr.message)}). Usá el botón de abajo para bajarla.`, true);
-        showToast(`El ${docWord} se generó pero no se pudo descargar sola. Usá el botón de descarga.`, true);
+        setBox('generateStatus', `⚠️ <strong>${Art} ${docWord} se generó, pero la descarga automática falló</strong> (${escapeHtml(dlErr.message)}). Usá el botón de abajo para bajarla.`, true);
+        showToast(`${Art} ${docWord} se generó pero no se pudo descargar sola. Usá el botón de descarga.`, true);
       }
       setBox('generateSuccess', null, true);
     } catch (err) {
       console.error("❌ Error al generar examen:", err);
       setBox('generateProgress', null, false);
-      setBox('generateError', `❌ <strong>No se pudo generar el ${docWord}.</strong> ${escapeHtml(err.message)}<br>Probá de nuevo; si sigue fallando, avisale al administrador.`, true);
-      showToast(`Error generando el ${docWord}: ${err.message}`, true);
+      setBox('generateError', `❌ <strong>No se pudo generar ${art} ${docWord}.</strong> ${escapeHtml(err.message)}<br>Probá de nuevo; si sigue fallando, avisale al administrador.`, true);
+      showToast(`Error generando ${art} ${docWord}: ${err.message}`, true);
     } finally {
       btn.disabled = false;
       btn.innerHTML = oldHtml;

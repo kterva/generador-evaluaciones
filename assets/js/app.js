@@ -407,6 +407,33 @@
     window.geCloseModal();
   };
 
+  // Descarga el archivo generado y lo guarda con un clic programático. Devuelve true si
+  // el navegador recibió el archivo completo; si no, el llamador deja el enlace manual.
+  async function saveGeneratedFile(url, filename) {
+    const res = await fetch(url, { credentials: 'same-origin', cache: 'no-store' });
+    if (!res.ok) throw new Error(`el servidor respondió ${res.status}`);
+    const buf = await res.arrayBuffer();
+    if (!buf.byteLength) throw new Error('el archivo llegó vacío');
+    const blob = new Blob([buf], { type: 'application/vnd.oasis.opendocument.text' });
+    const objUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objUrl;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(objUrl), 60000);
+    return buf.byteLength;
+  }
+
+  function setBox(id, html, visible) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (html !== null) el.innerHTML = html;
+    el.classList.toggle('hidden', !visible);
+  }
+
   // Generate Exam
   window.geGenerateExam = async function() {
     if (selectedExercises.length === 0) return;
@@ -414,10 +441,11 @@
     const btn = document.getElementById('btnGenerate');
     const oldHtml = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = `⏳ Ensamblando evaluación ODT con Pandoc...`;
+    btn.innerHTML = `⏳ Generando la evaluación...`;
 
-    const successBox = document.getElementById('generateSuccess');
-    if (successBox) successBox.classList.add('hidden');
+    setBox('generateSuccess', null, false);
+    setBox('generateError', null, false);
+    setBox('generateProgress', '⏳ Armando la evaluación, puede tardar unos segundos...', true);
 
     const payload = {
       titulo: document.getElementById('examTitle')?.value || 'Evaluación de Física',
@@ -446,17 +474,37 @@
       }
 
       const data = await res.json();
-      if (successBox) {
-        successBox.classList.remove('hidden');
-        const dlLink = document.getElementById('downloadLink');
-        if (dlLink) {
-          dlLink.href = data.download_url;
-          dlLink.innerText = `Descargar ${data.filename} (${data.size_kb} KB)`;
-        }
+      const dlLink = document.getElementById('downloadLink');
+      if (dlLink) {
+        dlLink.href = data.download_url;
+        dlLink.setAttribute('download', data.filename);
+        dlLink.innerText = `Descargar ${data.filename} (${data.size_kb} KB)`;
+        // Mismo guardado que el automático, con el enlace directo como respaldo.
+        dlLink.onclick = async (ev) => {
+          ev.preventDefault();
+          try {
+            await saveGeneratedFile(data.download_url, data.filename);
+          } catch (_) {
+            window.location.href = data.download_url;
+          }
+        };
       }
-      showToast(`¡Evaluación "${data.filename}" generada con éxito!`);
+
+      setBox('generateProgress', null, false);
+      try {
+        const bytes = await saveGeneratedFile(data.download_url, data.filename);
+        setBox('generateStatus', `✅ <strong>¡Evaluación generada!</strong> Se descargó <em>${escapeHtml(data.filename)}</em> (${Math.round(bytes / 102.4) / 10} KB). Buscala en tu carpeta de Descargas.`, true);
+        showToast(`Evaluación descargada: ${data.filename}`);
+      } catch (dlErr) {
+        console.error('❌ Descarga automática falló:', dlErr);
+        setBox('generateStatus', `⚠️ <strong>La evaluación se generó, pero la descarga automática falló</strong> (${escapeHtml(dlErr.message)}). Usá el botón de abajo para bajarla.`, true);
+        showToast('La evaluación se generó pero no se pudo descargar sola. Usá el botón de descarga.', true);
+      }
+      setBox('generateSuccess', null, true);
     } catch (err) {
       console.error("❌ Error al generar examen:", err);
+      setBox('generateProgress', null, false);
+      setBox('generateError', `❌ <strong>No se pudo generar la evaluación.</strong> ${escapeHtml(err.message)}<br>Probá de nuevo; si sigue fallando, avisale al administrador.`, true);
       showToast(`Error generando examen: ${err.message}`, true);
     } finally {
       btn.disabled = false;

@@ -3,7 +3,7 @@ Contributors: leonardo
 Tags: fisica, educacion, evaluaciones, odt, libreoffice, pandoc
 Requires at least: 5.9
 Tested up to: 6.7
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 License: GPLv2 or later
 
 Banco interactivo de ejercicios y generador de pruebas en formato LibreOffice (.odt) para docentes.
@@ -30,6 +30,10 @@ Este plugin permite a los docentes de Física (y otras asignaturas) subir sus re
 * `[generador_evaluaciones]`: Muestra la interfaz completa de arrastrar y soltar, selección de ejercicios y generador de pruebas.
 
 == Changelog ==
+
+= 1.0.3 =
+* La evaluación generada se descarga sola al terminar (se baja el archivo con `fetch` y se guarda con nombre y tipo correctos), sin depender de `target="_blank"`.
+* Mensajes claros en cada paso: "Armando la evaluación…", "Se descargó <archivo>", aviso si la descarga automática falla (con botón de respaldo) y mensaje de error visible en la página si falla la generación, no solo un aviso que desaparece.
 
 = 1.0.2 =
 * Corrige el error 403 ("Cookie check failed") al generar el archivo final cuando la página venía de caché con un nonce de otro usuario: la página no se cachea (DONOTCACHEPAGE + cabeceras no-cache), las llamadas a la API envían la cookie de sesión y, ante un 401/403, piden un nonce nuevo (`admin-ajax.php?action=rest-nonce`) y reintentan una vez.

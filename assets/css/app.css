@@ -352,6 +352,31 @@
   text-align: center;
 }
 
+.ge-generate-progress {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--ge-radius);
+  text-align: center;
+  font-weight: 500;
+}
+
+.ge-generate-error {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--ge-radius);
+  color: #991b1b;
+}
+
+.ge-generate-hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
 /* Empty States */
 .ge-empty-state {
   text-align: center;

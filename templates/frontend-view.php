@@ -113,10 +113,13 @@ if (!defined('ABSPATH')) {
         <button id="btnGenerate" class="ge-btn ge-btn-success ge-btn-lg ge-btn-block" onclick="geGenerateExam()" disabled>
           📥 Generar Evaluación en LibreOffice (.odt)
         </button>
-        <div id="generateSuccess" class="ge-generate-result hidden">
-          <p>✅ <strong>¡Evaluación generada con éxito!</strong></p>
-          <a id="downloadLink" href="#" class="ge-btn ge-btn-primary ge-btn-block" target="_blank" download>Descargar archivo .odt</a>
+        <div id="generateProgress" class="ge-generate-progress hidden" role="status" aria-live="polite"></div>
+        <div id="generateSuccess" class="ge-generate-result hidden" role="status" aria-live="polite">
+          <p id="generateStatus">✅ <strong>¡Evaluación generada con éxito!</strong></p>
+          <a id="downloadLink" href="#" class="ge-btn ge-btn-primary ge-btn-block" download>Descargar archivo .odt</a>
+          <p class="ge-generate-hint">Si la descarga no empezó sola, hacé clic en el botón. El archivo se abre con LibreOffice Writer.</p>
         </div>
+        <div id="generateError" class="ge-generate-error hidden" role="alert"></div>
       </div>
     </section>
   </div>

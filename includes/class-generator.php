@@ -177,7 +177,7 @@ class Generador_Evaluaciones_Generator {
             $pandoc_cmd = '/usr/bin/pandoc';
         }
 
-        $cmd = escapeshellarg($pandoc_cmd) . ' ' . escapeshellarg($temp_md) . ' -o ' . escapeshellarg($output_file) . ' -f markdown-raw_html-raw_attribute-raw_tex-tex_math_dollars --metadata=title=' . escapeshellarg($titulo) . ' 2>&1';
+        $cmd = escapeshellarg($pandoc_cmd) . ' ' . escapeshellarg($temp_md) . ' -o ' . escapeshellarg($output_file) . ' -f markdown-raw_html-raw_attribute-raw_tex-tex_math_dollars 2>&1';
         $output = array();
         $return_var = 0;
         exec($cmd, $output, $return_var);

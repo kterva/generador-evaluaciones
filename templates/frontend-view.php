@@ -90,7 +90,7 @@ if (!defined('ABSPATH')) {
           </div>
           <div class="ge-form-col">
             <label>Fecha:</label>
-            <input type="text" id="examDate" value="Fecha: ___ / ___ / 2026">
+            <input type="text" id="examDate" value="___ / ___ / 2026">
           </div>
         </div>
         <div class="ge-form-row">

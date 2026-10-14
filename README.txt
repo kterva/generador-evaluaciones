@@ -33,6 +33,7 @@ Este plugin permite a los docentes de Física (y otras asignaturas) subir sus re
 
 = 1.0.2 =
 * Corrige el error 403 ("Cookie check failed") al generar el archivo final cuando la página venía de caché con un nonce de otro usuario: la página no se cachea (DONOTCACHEPAGE + cabeceras no-cache), las llamadas a la API envían la cookie de sesión y, ante un 401/403, piden un nonce nuevo (`admin-ajax.php?action=rest-nonce`) y reintentan una vez.
+* El .odt ya no repite el título (salía dos veces) ni lo corrompe con tildes: se quitó `--metadata=title` porque `escapeshellarg` descarta los caracteres no ASCII bajo el locale de PHP-FPM. El campo Fecha ya no duplica la etiqueta "Fecha:".
 * Requiere WordPress 5.9 o superior (acción `rest-nonce`).
 * El nombre del .odt generado ya no pierde los acentos del tema (antes "Dinámica" salía "Din_mica").
 

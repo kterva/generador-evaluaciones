@@ -3,7 +3,7 @@ Contributors: leonardo
 Tags: fisica, educacion, evaluaciones, odt, libreoffice, pandoc
 Requires at least: 5.9
 Tested up to: 6.7
-Stable tag: 1.0.13
+Stable tag: 1.0.14
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -36,6 +36,9 @@ Este plugin permite a los docentes de Física (y otras asignaturas) subir sus re
 Tests automáticos (sin WordPress): `php tests/run.php` (PHP 8+ con zip, dom y mbstring; poppler-utils y pandoc para las pruebas de PDF y de generación del .odt, que se omiten si faltan). Se ejecutan en GitHub en cada push.
 
 == Changelog ==
+
+= 1.0.14 =
+* Los ejercicios de un archivo recién subido se muestran en el orden del documento (1, 2, 3…) y no al revés. Los de un archivo nuevo siguen apareciendo arriba de los anteriores.
 
 = 1.0.13 =
 * Cierre de la auditoría de código. Seguridad: el identificador de documento de la caché pasa de 12 a 32 caracteres hexadecimales (128 bits), y se valida en un único lugar; `/status` ya no ejecuta programas del sistema (busca los binarios en rutas conocidas) y solo informa disponibilidad.

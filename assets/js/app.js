@@ -184,12 +184,10 @@
         if (exs.length === 0) {
           showToast(`No se detectaron enunciados separados en "${file.name}".`, true);
         } else {
-          for (const e of exs) {
-            if (!availableExercises.some(existing => existing.id === e.id)) {
-              availableExercises.unshift(e);
-              totalAdded++;
-            }
-          }
+          // Los ejercicios del archivo nuevo van arriba, pero respetando el orden del documento.
+          const fresh = exs.filter(e => !availableExercises.some(existing => existing.id === e.id));
+          availableExercises.unshift(...fresh);
+          totalAdded += fresh.length;
         }
       } catch (err) {
         console.error("❌ Error al subir:", err);

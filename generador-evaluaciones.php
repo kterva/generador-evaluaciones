@@ -277,7 +277,7 @@ function ge_render_shortcode($atts) {
         'ge-styles',
         GE_PLUGIN_URL . 'assets/css/app.css',
         array(),
-        GE_VERSION
+        GE_VERSION . '.' . filemtime(GE_PLUGIN_DIR . 'assets/css/app.css')
     );
 
     // Encolar fuente Inter
@@ -293,7 +293,7 @@ function ge_render_shortcode($atts) {
         'ge-app',
         GE_PLUGIN_URL . 'assets/js/app.js',
         array(),
-        GE_VERSION,
+        GE_VERSION . '.' . filemtime(GE_PLUGIN_DIR . 'assets/js/app.js'),
         true
     );
 

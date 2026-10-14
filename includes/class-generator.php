@@ -90,6 +90,19 @@ class Generador_Evaluaciones_Generator {
         return trim(preg_replace('/\s+/', ' ', self::escape_md($text)));
     }
 
+    /**
+     * Arma el cuerpo de un ejercicio en markdown a partir de su texto (ya escapado).
+     * Las subpreguntas a), b)... solo se reconocen como marcadores independientes: no dentro de
+     * palabras ni entre paréntesis, como "(a)" o "fig. a)" pegado a una letra.
+     */
+    public static function format_exercise_body($raw_text) {
+        $body = preg_replace('/^(?:ejercicio|problema|actividad|pregunta)\s*\d+[:\.\-]?\s*/iu', '', trim((string) $raw_text));
+        $body = preg_replace('/^\d+\s*[\.\-\)]\s*/u', '', $body);
+        $body = preg_replace('/(?<![\p{L}\p{N}(\/-])([a-h])\)\s*/u', "\n\n**$1)** ", $body);
+        $body = preg_replace('/(?<!\n)Afirmaci[oó]n\s*(\d*)\s*:\s*/iu', "\n\n* **Afirmación $1:** ", $body);
+        return trim($body);
+    }
+
     public static function generate_odt($data, $cache_dir, $output_dir, $output_url) {
         $tipo = (isset($data['tipo']) && $data['tipo'] === 'repartido') ? 'repartido' : 'evaluacion';
         $titulo = !empty($data['titulo']) ? trim((string) $data['titulo']) : ($tipo === 'repartido' ? 'Repartido de Física' : 'Evaluación de Física');
@@ -129,16 +142,9 @@ class Generador_Evaluaciones_Generator {
             $md[] = "";
 
             $raw_text = !empty($ex['text']) && is_string($ex['text']) ? self::escape_md($ex['text']) : '';
-            // Limpiar "Ejercicio X:" al inicio para no duplicar
-            $clean_body = preg_replace('/^(?:ejercicio|problema|actividad|pregunta)\s*\d+[:\.\-]?\s*/i', '', trim($raw_text));
-            $clean_body = preg_replace('/^\d+\s*[\.\-\)]\s*/', '', $clean_body);
+            $clean_body = self::format_exercise_body($raw_text);
 
-            // Formatear subpreguntas a), b), etc.
-            $clean_body = preg_replace('/(?<!\n)([a-z]\))\s*/i', "\n\n**$1** ", $clean_body);
-            // Formatear afirmaciones
-            $clean_body = preg_replace('/(?<!\n)Afirmaci[oó]n\s*(\d*)\s*:\s*/i', "\n\n* **Afirmación $1:** ", $clean_body);
-
-            $md[] = trim($clean_body);
+            $md[] = $clean_body;
             $md[] = "";
 
             // Imagen asociada
@@ -146,7 +152,7 @@ class Generador_Evaluaciones_Generator {
             $doc_hash = !empty($ex['doc_hash']) && is_string($ex['doc_hash']) ? $ex['doc_hash'] : '';
 
             // doc_hash e image vienen del cliente: validar antes de armar una ruta.
-            if (!empty($img_name) && preg_match('/^[a-f0-9]{12}$/', $doc_hash)
+            if (!empty($img_name) && ge_is_valid_doc_hash($doc_hash)
                 && preg_match('/^[A-Za-z0-9._-]+\.(png|jpe?g|gif)$/i', $img_name)) {
                 $full_img_path = $cache_dir . '/' . $doc_hash . '/' . $img_name;
                 $real = realpath($full_img_path);
@@ -173,11 +179,10 @@ class Generador_Evaluaciones_Generator {
         $filename = ($tipo === 'repartido' ? 'Repartido_' : 'Evaluacion_') . $clean_tema . '_' . date('Ymd_His') . '_' . wp_generate_password(8, false, false) . '.odt';
         $output_file = $output_dir . '/' . $filename;
 
-        // Comprobar comando pandoc
-        $pandoc_cmd = 'pandoc';
-        // Verificar si existe en /usr/bin/pandoc
-        if (file_exists('/usr/bin/pandoc')) {
-            $pandoc_cmd = '/usr/bin/pandoc';
+        // Programa pandoc: ruta habitual si existe; si no, el PATH del sistema.
+        $pandoc_cmd = ge_find_binary('pandoc');
+        if ($pandoc_cmd === '') {
+            $pandoc_cmd = 'pandoc';
         }
 
         $cmd = escapeshellarg($pandoc_cmd) . ' ' . escapeshellarg($temp_md) . ' -o ' . escapeshellarg($output_file) . ' -f markdown-raw_html-raw_attribute-raw_tex-tex_math_dollars 2>&1';

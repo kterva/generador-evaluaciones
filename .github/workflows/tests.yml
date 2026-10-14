@@ -1,0 +1,19 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: zip, dom, mbstring, gd
+      - name: Instalar pandoc y poppler-utils
+        run: sudo apt-get update && sudo apt-get install -y pandoc poppler-utils
+      - name: Ejecutar los tests
+        run: php tests/run.php

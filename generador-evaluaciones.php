@@ -3,7 +3,7 @@
  * Plugin Name: Generador de Repartidos y Evaluaciones
  * Plugin URI: https://culturalibre.edu.uy
  * Description: Armá repartidos y evaluaciones a partir de tus propios documentos: extrae los ejercicios y las figuras y genera un archivo LibreOffice (.odt) listo para imprimir o editar. Incluye página de ayuda.
- * Version: 1.0.12
+ * Version: 1.0.13
  * Author: Leonardo - Cultura Libre
  * Author URI: https://culturalibre.edu.uy
  * License: GPL-3.0-or-later
@@ -33,7 +33,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('GE_VERSION', '1.0.12');
+define('GE_VERSION', '1.0.13');
 define('GE_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GE_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('GE_MAX_UPLOAD_BYTES', 15 * 1024 * 1024);
@@ -84,14 +84,7 @@ add_action('init', 'ge_ensure_role');
  * (que entrega el correo ya verificado).
  */
 function ge_email_in_allowlist($email) {
-    $email = strtolower(trim((string) $email));
-    if ($email === '' || !is_email($email)) return false;
-    $domain = '@' . substr(strrchr($email, '@'), 1);
-    $lines = preg_split('/[\r\n,;\s]+/', strtolower((string) get_option('ge_auto_approve', '')), -1, PREG_SPLIT_NO_EMPTY);
-    foreach ($lines as $l) {
-        if ($l === $email || $l === $domain) return true;
-    }
-    return false;
+    return is_email($email) && ge_email_matches_list($email, get_option('ge_auto_approve', ''));
 }
 
 function ge_maybe_auto_approve($user) {
@@ -201,6 +194,7 @@ function ge_rest_permission() {
     return new WP_Error('rest_forbidden', 'Necesitás iniciar sesión con un usuario docente para usar el generador.', array('status' => rest_authorization_required_code()));
 }
 
+require_once GE_PLUGIN_DIR . 'includes/functions.php';
 require_once GE_PLUGIN_DIR . 'includes/class-extractor.php';
 require_once GE_PLUGIN_DIR . 'includes/class-generator.php';
 
@@ -320,7 +314,7 @@ function ge_cleanup_storage() {
  * mientras el docente sigue armando evaluaciones con esos archivos.
  */
 function ge_touch_cache_dir($hash, $cache_dir) {
-    if (!is_string($hash) || !preg_match('/^[a-f0-9]{12}$/', $hash)) return;
+    if (!ge_is_valid_doc_hash($hash)) return;
     $dir = $cache_dir . '/' . $hash;
     if (!is_dir($dir)) return;
     foreach (scandir($dir) as $f) {
@@ -333,7 +327,7 @@ function ge_touch_cache_dir($hash, $cache_dir) {
  * Borra una carpeta de figuras (cache/<hash>) o un .odt generado, validando el nombre.
  */
 function ge_delete_cache_dir($hash, $cache_dir) {
-    if (!is_string($hash) || !preg_match('/^[a-f0-9]{12}$/', $hash)) return;
+    if (!ge_is_valid_doc_hash($hash)) return;
     $dir = $cache_dir . '/' . $hash;
     if (!is_dir($dir)) return;
     foreach (scandir($dir) as $f) {
@@ -421,19 +415,7 @@ function ge_rest_upload_handler($request) {
     }
 
     // Validar el contenido real, no solo la extensión.
-    $head = (string) file_get_contents($uploaded_file['tmp_name'], false, null, 0, 8);
-    if ($ext === 'pdf') {
-        $ok = strncmp($head, '%PDF-', 5) === 0;
-    } else {
-        $ok = strncmp($head, "PK\x03\x04", 4) === 0;
-        if ($ok) {
-            $zip = new ZipArchive();
-            $expected = ($ext === 'docx') ? 'word/document.xml' : 'content.xml';
-            $ok = $zip->open($uploaded_file['tmp_name']) === true && $zip->locateName($expected) !== false;
-            if ($ok && $zip->numFiles > 2000) $ok = false;
-            $zip->close();
-        }
-    }
+    $ok = ge_validate_upload_content($uploaded_file['tmp_name'], $ext);
     if (!$ok) {
         return new WP_Error('invalid_content', 'El contenido del archivo no coincide con su extensión.', array('status' => 400));
     }
@@ -546,17 +528,9 @@ function ge_rest_generate_handler($request) {
  * Endpoint REST: /status (verificar dependencias)
  */
 function ge_rest_status_handler() {
-    $pandoc_path = @exec('which pandoc');
-    if (empty($pandoc_path) && file_exists('/usr/bin/pandoc')) {
-        $pandoc_path = '/usr/bin/pandoc';
-    }
-
-    $pdfimages_path = @exec('which pdfimages');
-    $pdftotext_path = @exec('which pdftotext');
-
     return rest_ensure_response(array(
-        'pandoc_available' => !empty($pandoc_path),
-        'poppler_available' => !empty($pdfimages_path) && !empty($pdftotext_path),
+        'pandoc_available' => ge_find_binary('pandoc') !== '',
+        'poppler_available' => ge_find_binary('pdfimages') !== '' && ge_find_binary('pdftotext') !== '',
         'gd_available' => function_exists('imagecreatefrompng'),
         'zip_available' => class_exists('ZipArchive')
     ));

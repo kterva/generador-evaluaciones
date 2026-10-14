@@ -3,7 +3,7 @@ Contributors: leonardo
 Tags: fisica, educacion, evaluaciones, odt, libreoffice, pandoc
 Requires at least: 5.9
 Tested up to: 6.7
-Stable tag: 1.0.12
+Stable tag: 1.0.13
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -31,7 +31,17 @@ Este plugin permite a los docentes de Física (y otras asignaturas) subir sus re
 * `[generador_evaluaciones_ayuda]`: Página de ayuda (crearla como página hija, /generador-evaluaciones/ayuda/).
 * `[generador_evaluaciones]`: Muestra la interfaz completa de arrastrar y soltar, selección de ejercicios y generador de pruebas.
 
+== Desarrollo ==
+
+Tests automáticos (sin WordPress): `php tests/run.php` (PHP 8+ con zip, dom y mbstring; poppler-utils y pandoc para las pruebas de PDF y de generación del .odt, que se omiten si faltan). Se ejecutan en GitHub en cada push.
+
 == Changelog ==
+
+= 1.0.13 =
+* Cierre de la auditoría de código. Seguridad: el identificador de documento de la caché pasa de 12 a 32 caracteres hexadecimales (128 bits), y se valida en un único lugar; `/status` ya no ejecuta programas del sistema (busca los binarios en rutas conocidas) y solo informa disponibilidad.
+* Figuras en el lugar correcto: en DOCX se asignan por su posición real en el documento (siguiendo las relaciones internas) y en PDF por página (antes se repartían por orden global y un ejercicio sin figura corría las siguientes). Se descartan imágenes decorativas muy chicas y formatos no usables (EMF/WMF), y se omite la extracción si el PDF trae más de 400 imágenes.
+* Subpreguntas: solo se reconocen `a)`…`h)` como marcadores independientes; ya no se parten palabras ni paréntesis como «(a)» o «2a)». Se reconocen enunciados que empiezan con `1.-`.
+* 38 tests automáticos (`tests/`) con documentos de prueba sintéticos, y ejecución automática en GitHub (`.github/workflows/tests.yml`).
 
 = 1.0.12 =
 * Privacidad: la tipografía Inter ya no se descarga de Google Fonts; se sirve desde el propio plugin (`assets/fonts`, subconjunto latino, licencia SIL OFL 1.1 incluida en `assets/fonts/OFL.txt`). El navegador del visitante ya no se conecta a Google al usar el generador ni la ayuda.

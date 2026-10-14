@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 <footer class="ge-footer">
   <p><strong>Generador de Repartidos y Evaluaciones</strong> | Desarrollado por <strong>Leonardo Trujillo</strong></p>
   <p class="ge-footer-small">
-    📜 Software libre bajo licencia GPL v2 o posterior |
+    📜 Software libre bajo licencia <a href="<?php echo esc_url(ge_license_url()); ?>">GPL v3 o posterior</a> |
     <a href="https://github.com/kterva/generador-evaluaciones" target="_blank" rel="noopener">🔗 Ver código fuente en GitHub</a>
   </p>
   <p class="ge-footer-version">Versión <?php echo esc_html(GE_VERSION); ?> · <a href="<?php echo esc_url(ge_help_url()); ?>">Ayuda</a></p>

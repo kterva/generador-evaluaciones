@@ -3,18 +3,37 @@
  * Plugin Name: Generador de Repartidos y Evaluaciones
  * Plugin URI: https://culturalibre.edu.uy
  * Description: Armá repartidos y evaluaciones a partir de tus propios documentos: extrae los ejercicios y las figuras y genera un archivo LibreOffice (.odt) listo para imprimir o editar. Incluye página de ayuda.
- * Version: 1.0.8
+ * Version: 1.0.9
  * Author: Leonardo - Cultura Libre
  * Author URI: https://culturalibre.edu.uy
- * License: GPL-2.0+
+ * License: GPL-3.0-or-later
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: generador-evaluaciones
+ */
+
+/*
+ * Generador de Repartidos y Evaluaciones
+ * Copyright (C) 2026 Leonardo Trujillo
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-define('GE_VERSION', '1.0.8');
+define('GE_VERSION', '1.0.9');
 define('GE_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GE_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('GE_MAX_UPLOAD_BYTES', 15 * 1024 * 1024);
@@ -160,6 +179,10 @@ function ge_rate_limit($action) {
     }
     set_transient($key, $n + 1, HOUR_IN_SECONDS);
     return true;
+}
+
+function ge_license_url() {
+    return apply_filters('ge_license_url', home_url('/licencia/'));
 }
 
 function ge_privacy_url() {

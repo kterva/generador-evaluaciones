@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
       <span class="ge-brand-icon">⚡</span>
       <div>
         <h2 class="ge-title">Generador de Repartidos y Evaluaciones</h2>
-        <p class="ge-subtitle">Subí tus repartidos o pruebas y armá un documento nuevo en formato LibreOffice (.odt) · <a href="<?php echo esc_url(ge_help_url()); ?>">¿Cómo se usa?</a></p>
+        <p class="ge-subtitle">Subí tus repartidos o pruebas y armá un documento nuevo en formato LibreOffice (.odt) · <a href="<?php echo esc_url(ge_help_url()); ?>">¿Cómo se usa?</a> · <a href="<?php echo esc_url(ge_manual_url()); ?>">Manual con capturas</a></p>
       </div>
     </div>
   </div>

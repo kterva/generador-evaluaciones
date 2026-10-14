@@ -3,7 +3,7 @@ Contributors: leonardo
 Tags: fisica, educacion, evaluaciones, odt, libreoffice, pandoc
 Requires at least: 5.9
 Tested up to: 6.7
-Stable tag: 1.0.16
+Stable tag: 1.0.17
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -36,6 +36,9 @@ Este plugin permite a los docentes de Física (y otras asignaturas) subir sus re
 Tests automáticos (sin WordPress): `php tests/run.php` (PHP 8+ con zip, dom y mbstring; poppler-utils y pandoc para las pruebas de PDF y de generación del .odt, que se omiten si faltan). Se ejecutan en GitHub en cada push.
 
 == Changelog ==
+
+= 1.0.17 =
+* Enlaces al nuevo **manual con capturas** (`/generador-evaluaciones/manual/`, filtro `ge_manual_url`): desde la herramienta («Manual con capturas»), desde el pie y desde la página de ayuda.
 
 = 1.0.16 =
 * Los documentos generados salen en **hoja A4** (21 × 29,7 cm, márgenes de 2 cm). Antes salían en tamaño carta, que es el que usa pandoc por defecto. Se agrega la plantilla `assets/reference-a4.odt` (derivada de la de pandoc) y un test que comprueba el tamaño.

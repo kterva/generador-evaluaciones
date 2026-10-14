@@ -67,6 +67,13 @@ register_deactivation_hook(__FILE__, function () {
     wp_clear_scheduled_hook('ge_cleanup_event');
 });
 
+// Al actualizar copiando archivos no corre el hook de activación: asegurar la tarea programada.
+add_action('init', function () {
+    if (!wp_next_scheduled('ge_cleanup_event')) {
+        wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', 'ge_cleanup_event');
+    }
+});
+
 /**
  * Limpieza diaria: borra uploads, caché y salidas más viejos que GE_RETENTION_DAYS.
  */

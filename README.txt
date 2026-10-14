@@ -1,9 +1,9 @@
-=== Generador de Evaluaciones de Física ===
+=== Generador de Repartidos y Evaluaciones ===
 Contributors: leonardo
 Tags: fisica, educacion, evaluaciones, odt, libreoffice, pandoc
 Requires at least: 5.9
 Tested up to: 6.7
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 License: GPLv2 or later
 
 Banco interactivo de ejercicios y generador de pruebas en formato LibreOffice (.odt) para docentes.
@@ -16,7 +16,7 @@ Este plugin permite a los docentes de Física (y otras asignaturas) subir sus re
 
 1. Subir la carpeta `generador-evaluaciones` al directorio `/wp-content/plugins/` o instalar el archivo `generador-evaluaciones.zip` desde el panel de WordPress (`Plugins -> Añadir nuevo -> Subir plugin`).
 2. Activar el plugin desde el menú de Plugins de WordPress.
-3. Crear una nueva página (ej: "Generador de Evaluaciones") e insertar el shortcode:
+3. Crear una nueva página (ej: "Generador de Repartidos y Evaluaciones", con la dirección /generador-evaluaciones/) e insertar el shortcode:
 
    `[generador_evaluaciones]`
 
@@ -27,9 +27,17 @@ Este plugin permite a los docentes de Física (y otras asignaturas) subir sus re
 
 == Shortcodes ==
 
+* `[generador_evaluaciones_ayuda]`: Página de ayuda (crearla como página hija, /generador-evaluaciones/ayuda/).
 * `[generador_evaluaciones]`: Muestra la interfaz completa de arrastrar y soltar, selección de ejercicios y generador de pruebas.
 
 == Changelog ==
+
+= 1.0.5 =
+* El plugin pasa a llamarse "Generador de Repartidos y Evaluaciones" (la herramienta sirve para ambos).
+* Nuevo selector "Tipo de documento": Evaluación (con estudiante, grupo y calificación) o Repartido (sin esos datos); cambia los textos, el título por defecto y el prefijo del archivo (`Evaluacion_…` / `Repartido_…`).
+* Nueva página de ayuda con el shortcode `[generador_evaluaciones_ayuda]` (pública, no requiere sesión): para qué sirve, quién puede usarla, paso a paso, consejos para detectar ejercicios, privacidad y problemas frecuentes. Se enlaza desde la herramienta y desde el pie.
+* Nuevo pie de página con el mismo estilo que graficador.culturalibre.edu.uy (autor, licencia, código fuente, versión, contacto).
+* Corrige un error del JS que podía dejar el botón «Generar» trabado sin mostrar mensaje.
 
 = 1.0.4 =
 * Nada persiste en el servidor: el archivo subido se procesa desde la carpeta temporal del sistema y se borra siempre al terminar (también si falla); el .odt generado se borra apenas el navegador lo descarga; las figuras extraídas se borran al cerrar o recargar la página.

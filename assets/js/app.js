@@ -462,6 +462,25 @@
     } catch (_) {}
   });
 
+  // El tipo de documento cambia los textos (y el título por defecto, si el docente no lo editó).
+  const TIPOS = {
+    evaluacion: { titulo: 'Evaluación Escrita de Física', heading: 'Tu Prueba en Curso', boton: '📥 Generar Evaluación en LibreOffice (.odt)' },
+    repartido:  { titulo: 'Repartido de Física',          heading: 'Tu Repartido en Curso', boton: '📥 Generar Repartido en LibreOffice (.odt)' }
+  };
+  function applyDocType() {
+    const sel = document.getElementById('examType');
+    if (!sel) return;
+    const t = TIPOS[sel.value] || TIPOS.evaluacion;
+    const other = sel.value === 'repartido' ? TIPOS.evaluacion : TIPOS.repartido;
+    const title = document.getElementById('examTitle');
+    if (title && title.value === other.titulo) title.value = t.titulo;
+    const h = document.getElementById('docTitleHeading');
+    if (h) h.firstChild.textContent = t.heading + ' ';
+    const b = document.getElementById('btnGenerate');
+    if (b) b.innerHTML = t.boton;
+  }
+  document.addEventListener('change', (ev) => { if (ev.target && ev.target.id === 'examType') applyDocType(); });
+
   // Latido: mientras la página esté abierta con archivos cargados, el servidor conserva sus figuras
   // (se pueden armar varias evaluaciones con los mismos archivos).
   setInterval(() => {
@@ -485,16 +504,21 @@
   window.geGenerateExam = async function() {
     if (selectedExercises.length === 0) return;
 
+    const isRep = document.getElementById('examType')?.value === 'repartido';
+    const docWord = isRep ? 'repartido' : 'evaluación';
+    const DocWord = isRep ? 'Repartido' : 'Evaluación';
+
     const btn = document.getElementById('btnGenerate');
     const oldHtml = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = `⏳ Generando la evaluación...`;
+    btn.innerHTML = `⏳ Generando el ${docWord}...`;
 
     setBox('generateSuccess', null, false);
     setBox('generateError', null, false);
-    setBox('generateProgress', '⏳ Armando la evaluación, puede tardar unos segundos...', true);
+    setBox('generateProgress', `⏳ Armando el ${docWord}, puede tardar unos segundos...`, true);
 
     const payload = {
+      tipo: document.getElementById('examType')?.value === 'repartido' ? 'repartido' : 'evaluacion',
       titulo: document.getElementById('examTitle')?.value || 'Evaluación de Física',
       tema: document.getElementById('examTopic')?.value || 'Física',
       institucion: document.getElementById('examInst')?.value || 'Liceo N° 1',
@@ -543,19 +567,19 @@
         const bytes = await saveGeneratedFile(data.download_url, data.filename);
         pendingFiles.delete(data.filename);
         cleanupOnServer([data.filename]);
-        setBox('generateStatus', `✅ <strong>¡Evaluación generada!</strong> Se descargó <em>${escapeHtml(data.filename)}</em> (${Math.round(bytes / 102.4) / 10} KB). Buscala en tu carpeta de Descargas.`, true);
-        showToast(`Evaluación descargada: ${data.filename}`);
+        setBox('generateStatus', `✅ <strong>¡${DocWord} ${isRep ? 'generado' : 'generada'}!</strong> Se descargó <em>${escapeHtml(data.filename)}</em> (${Math.round(bytes / 102.4) / 10} KB). Buscala en tu carpeta de Descargas.`, true);
+        showToast(`${DocWord} descargado: ${data.filename}`);
       } catch (dlErr) {
         console.error('❌ Descarga automática falló:', dlErr);
-        setBox('generateStatus', `⚠️ <strong>La evaluación se generó, pero la descarga automática falló</strong> (${escapeHtml(dlErr.message)}). Usá el botón de abajo para bajarla.`, true);
-        showToast('La evaluación se generó pero no se pudo descargar sola. Usá el botón de descarga.', true);
+        setBox('generateStatus', `⚠️ <strong>El ${docWord} se generó, pero la descarga automática falló</strong> (${escapeHtml(dlErr.message)}). Usá el botón de abajo para bajarla.`, true);
+        showToast(`El ${docWord} se generó pero no se pudo descargar sola. Usá el botón de descarga.`, true);
       }
       setBox('generateSuccess', null, true);
     } catch (err) {
       console.error("❌ Error al generar examen:", err);
       setBox('generateProgress', null, false);
-      setBox('generateError', `❌ <strong>No se pudo generar la evaluación.</strong> ${escapeHtml(err.message)}<br>Probá de nuevo; si sigue fallando, avisale al administrador.`, true);
-      showToast(`Error generando examen: ${err.message}`, true);
+      setBox('generateError', `❌ <strong>No se pudo generar el ${docWord}.</strong> ${escapeHtml(err.message)}<br>Probá de nuevo; si sigue fallando, avisale al administrador.`, true);
+      showToast(`Error generando el ${docWord}: ${err.message}`, true);
     } finally {
       btn.disabled = false;
       btn.innerHTML = oldHtml;

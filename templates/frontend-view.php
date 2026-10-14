@@ -9,8 +9,8 @@ if (!defined('ABSPATH')) {
     <div class="ge-brand">
       <span class="ge-brand-icon">⚡</span>
       <div>
-        <h2 class="ge-title">Constructor de Evaluaciones de Física</h2>
-        <p class="ge-subtitle">Subí tus repartidos o pruebas y armá una nueva evaluación en formato LibreOffice (.odt)</p>
+        <h2 class="ge-title">Generador de Repartidos y Evaluaciones</h2>
+        <p class="ge-subtitle">Subí tus repartidos o pruebas y armá un documento nuevo en formato LibreOffice (.odt) · <a href="<?php echo esc_url(ge_help_url()); ?>">¿Cómo se usa?</a></p>
       </div>
     </div>
   </div>
@@ -63,12 +63,21 @@ if (!defined('ABSPATH')) {
     <!-- COLUMNA DERECHA: EXAMEN EN CONSTRUCCION -->
     <section class="ge-column">
       <div class="ge-column-header">
-        <h3>Tu Prueba en Curso <span id="selectedCount" class="ge-badge ge-badge-primary">0</span></h3>
+        <h3 id="docTitleHeading">Tu Prueba en Curso <span id="selectedCount" class="ge-badge ge-badge-primary">0</span></h3>
         <button id="btnClearExam" class="ge-btn ge-btn-sm ge-btn-outline-danger" onclick="geClearExam()">Vaciar</button>
       </div>
 
       <!-- FORMULARIO DE ENCABEZADO INSTITUCIONAL -->
       <div class="ge-card ge-metadata-card">
+        <div class="ge-form-row">
+          <div class="ge-form-col ge-full-width">
+            <label>Tipo de documento:</label>
+            <select id="examType">
+              <option value="evaluacion" selected>Evaluación (con estudiante, grupo y calificación)</option>
+              <option value="repartido">Repartido (sin datos del estudiante)</option>
+            </select>
+          </div>
+        </div>
         <div class="ge-form-row">
           <div class="ge-form-col">
             <label>Título:</label>
@@ -146,4 +155,5 @@ if (!defined('ABSPATH')) {
       </div>
     </div>
   </div>
+  <?php echo ge_render_footer(); ?>
 </div>

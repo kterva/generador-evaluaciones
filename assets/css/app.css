@@ -495,3 +495,40 @@
   align-items: center;
   background: #f8fafc;
 }
+
+
+/* Pie de página (igual al de graficador.culturalibre.edu.uy) */
+.ge-footer {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 2px solid #ddd;
+  text-align: center;
+  color: #666;
+}
+.ge-footer p { margin: 5px 0; }
+.ge-footer .ge-footer-small { font-size: 14px; }
+.ge-footer .ge-footer-version { font-size: 13px; color: #999; }
+.ge-footer a { color: #3498db; text-decoration: none; }
+.ge-footer a:hover { text-decoration: underline; }
+
+/* Ayuda */
+.ge-help-section { margin: 1.5rem 0; }
+.ge-app-container .ge-help-section h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #0f172a;
+  padding-bottom: 0.25rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+.ge-help-section code { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.9em; }
+.ge-help-steps { padding-left: 1.25rem; }
+.ge-help-steps li { margin-bottom: 0.75rem; line-height: 1.55; }
+.ge-help-faq dt { font-weight: 700; margin-top: 0.75rem; }
+.ge-help-faq dd { margin: 0.2rem 0 0; }
+.ge-help-cta { text-align: center; margin: 1.5rem 0; }
+.ge-help-cta .ge-btn { display: inline-block; text-decoration: none; }
+.ge-notice { padding: 1rem; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; }
+
+.ge-help strong, .ge-help dt { font-weight: 700; }

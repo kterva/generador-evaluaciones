@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name: Generador de Evaluaciones de Física
+ * Plugin Name: Generador de Repartidos y Evaluaciones
  * Plugin URI: https://culturalibre.edu.uy
- * Description: Banco interactivo de ejercicios y generador de pruebas en formato LibreOffice (.odt) para docentes de Física.
- * Version: 1.0.4
+ * Description: Armá repartidos y evaluaciones a partir de tus propios documentos: extrae los ejercicios y las figuras y genera un archivo LibreOffice (.odt) listo para imprimir o editar. Incluye página de ayuda.
+ * Version: 1.0.5
  * Author: Leonardo - Cultura Libre
  * Author URI: https://culturalibre.edu.uy
  * License: GPL-2.0+
@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('GE_VERSION', '1.0.4');
+define('GE_VERSION', '1.0.5');
 define('GE_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GE_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('GE_MAX_UPLOAD_BYTES', 15 * 1024 * 1024);
@@ -28,6 +28,10 @@ function ge_can_use() {
     return current_user_can(apply_filters('ge_required_capability', 'edit_posts'));
 }
 
+function ge_help_url() {
+    return apply_filters('ge_help_url', home_url('/generador-evaluaciones/ayuda/'));
+}
+
 function ge_rest_permission() {
     if (!ge_can_use()) {
         return new WP_Error('rest_forbidden', 'Necesitás iniciar sesión con un usuario docente para usar el generador.', array('status' => rest_authorization_required_code()));
@@ -37,6 +41,44 @@ function ge_rest_permission() {
 
 require_once GE_PLUGIN_DIR . 'includes/class-extractor.php';
 require_once GE_PLUGIN_DIR . 'includes/class-generator.php';
+
+/**
+ * Pie de página común (mismo estilo que graficador.culturalibre.edu.uy).
+ */
+function ge_render_footer() {
+    ob_start();
+    include GE_PLUGIN_DIR . 'templates/footer.php';
+    return ob_get_clean();
+}
+
+/**
+ * Encola los estilos del plugin (versionados por fecha de modificación del archivo).
+ */
+function ge_enqueue_styles() {
+    wp_enqueue_style(
+        'ge-styles',
+        GE_PLUGIN_URL . 'assets/css/app.css',
+        array(),
+        GE_VERSION . '.' . filemtime(GE_PLUGIN_DIR . 'assets/css/app.css')
+    );
+    wp_enqueue_style(
+        'ge-google-fonts',
+        'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+        array(),
+        null
+    );
+}
+
+/**
+ * Shortcode: [generador_evaluaciones_ayuda] — guía de uso (pública, no requiere sesión).
+ */
+add_shortcode('generador_evaluaciones_ayuda', 'ge_render_help_shortcode');
+function ge_render_help_shortcode($atts) {
+    ge_enqueue_styles();
+    ob_start();
+    include GE_PLUGIN_DIR . 'templates/ayuda-view.php';
+    return ob_get_clean();
+}
 
 /**
  * Activación del plugin: crear carpetas de trabajo en wp-content/uploads/
@@ -276,7 +318,7 @@ function ge_rest_cleanup_handler($request) {
 
     $files = isset($params['files']) && is_array($params['files']) ? array_slice($params['files'], 0, 20) : array();
     foreach ($files as $f) {
-        if (is_string($f) && preg_match('/^Evaluacion_[A-Za-z0-9_-]+\.odt$/', $f)) {
+        if (is_string($f) && preg_match('/^(Evaluacion|Repartido)_[A-Za-z0-9_-]+\.odt$/', $f)) {
             @unlink($storage['output_dir'] . '/' . $f);
         }
     }
@@ -356,7 +398,8 @@ function ge_rest_status_handler() {
 add_shortcode('generador_evaluaciones', 'ge_render_shortcode');
 function ge_render_shortcode($atts) {
     if (!ge_can_use()) {
-        return '<p class="ge-notice">Para usar el generador de evaluaciones tenés que <a href="' . esc_url(wp_login_url(get_permalink())) . '">iniciar sesión</a> con un usuario docente.</p>';
+        ge_enqueue_styles();
+        return '<div class="ge-app-container"><p class="ge-notice">Para usar el generador de repartidos y evaluaciones tenés que <a href="' . esc_url(wp_login_url(get_permalink())) . '">iniciar sesión</a> con un usuario docente. ¿Querés saber cómo funciona? Mirá la <a href="' . esc_url(ge_help_url()) . '">ayuda</a>.</p>' . ge_render_footer() . '</div>';
     }
     $storage = ge_get_storage();
 
@@ -368,21 +411,7 @@ function ge_render_shortcode($atts) {
         nocache_headers();
     }
 
-    // Encolar estilos
-    wp_enqueue_style(
-        'ge-styles',
-        GE_PLUGIN_URL . 'assets/css/app.css',
-        array(),
-        GE_VERSION . '.' . filemtime(GE_PLUGIN_DIR . 'assets/css/app.css')
-    );
-
-    // Encolar fuente Inter
-    wp_enqueue_style(
-        'ge-google-fonts',
-        'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
-        array(),
-        null
-    );
+    ge_enqueue_styles();
 
     // Encolar JavaScript
     wp_enqueue_script(

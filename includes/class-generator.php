@@ -91,7 +91,8 @@ class Generador_Evaluaciones_Generator {
     }
 
     public static function generate_odt($data, $cache_dir, $output_dir, $output_url) {
-        $titulo = !empty($data['titulo']) ? trim((string) $data['titulo']) : 'Evaluación de Física';
+        $tipo = (isset($data['tipo']) && $data['tipo'] === 'repartido') ? 'repartido' : 'evaluacion';
+        $titulo = !empty($data['titulo']) ? trim((string) $data['titulo']) : ($tipo === 'repartido' ? 'Repartido de Física' : 'Evaluación de Física');
         $tema = !empty($data['tema']) ? trim($data['tema']) : 'General';
         $institucion = !empty($data['institucion']) ? trim($data['institucion']) : 'Institución Educativa';
         $curso = !empty($data['curso']) ? trim($data['curso']) : '6to Año';
@@ -110,7 +111,9 @@ class Generador_Evaluaciones_Generator {
         // Tabla de encabezado institucional
         $md[] = "| **Institución:** " . self::one_line($institucion) . " | **Curso:** " . self::one_line($curso) . " | **Fecha:** " . self::one_line($fecha) . " |";
         $md[] = "| :--- | :--- | :--- |";
-        $md[] = "| **Estudiante:** | **Grupo:** | **Calificación:** |";
+        if ($tipo === 'evaluacion') {
+            $md[] = "| **Estudiante:** | **Grupo:** | **Calificación:** |";
+        }
         $md[] = "";
 
         if (!empty($pautas)) {
@@ -167,7 +170,7 @@ class Generador_Evaluaciones_Generator {
         // Nombre de archivo sanitizado
         $clean_tema = substr(preg_replace('/[^a-zA-Z0-9_-]+/', '_', remove_accents($tema)), 0, 60);
         $clean_tema = trim($clean_tema, '_');
-        $filename = 'Evaluacion_' . $clean_tema . '_' . date('Ymd_His') . '_' . wp_generate_password(8, false, false) . '.odt';
+        $filename = ($tipo === 'repartido' ? 'Repartido_' : 'Evaluacion_') . $clean_tema . '_' . date('Ymd_His') . '_' . wp_generate_password(8, false, false) . '.odt';
         $output_file = $output_dir . '/' . $filename;
 
         // Comprobar comando pandoc

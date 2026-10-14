@@ -1,0 +1,18 @@
+<?php
+if (!defined('ABSPATH')) {
+    exit;
+}
+?>
+<!-- Pie de página (mismo estilo que graficador.culturalibre.edu.uy) -->
+<footer class="ge-footer">
+  <p><strong>Generador de Repartidos y Evaluaciones</strong> | Desarrollado por <strong>Leonardo Trujillo</strong></p>
+  <p class="ge-footer-small">
+    📜 Software libre bajo licencia GPL v2 o posterior |
+    <a href="https://github.com/kterva/generador-evaluaciones" target="_blank" rel="noopener">🔗 Ver código fuente en GitHub</a>
+  </p>
+  <p class="ge-footer-version">Versión <?php echo esc_html(GE_VERSION); ?> · <a href="<?php echo esc_url(ge_help_url()); ?>">Ayuda</a></p>
+  <p class="ge-footer-version">
+    ¡Contribuciones y sugerencias son bienvenidas! 🚀 Escribime a
+    <a href="mailto:trujillo.leonardo@gmail.com">trujillo.leonardo@gmail.com</a>
+  </p>
+</footer>

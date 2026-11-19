@@ -1,5 +1,7 @@
 # Generador de Repartidos y Evaluaciones
 
+🌐 [English](README.en.md) · **Español**
+
 Plugin de WordPress para docentes: subís tus repartidos y pruebas anteriores (`.odt`, `.docx` o `.pdf`), el plugin **extrae los ejercicios y sus figuras**, elegís cuáles usar y genera un documento nuevo en **LibreOffice (`.odt`)**, en hoja A4, listo para imprimir o seguir editando.
 
 Pensado para Física, pero sirve para cualquier asignatura.
@@ -48,7 +50,3 @@ Software libre bajo **GPL v3 o posterior**. Texto completo en [`LICENSE`](LICENS
 ## Apoyar el proyecto
 
 Si te sirve, podés apoyar su mantenimiento en [GitHub Sponsors](https://github.com/sponsors/kterva). Los aportes cubren servidor, dominio y herramientas de desarrollo. También ayuda mucho difundirlo entre colegas y avisar de errores en los *issues*.
-
----
-
-**English:** WordPress plugin for teachers. Upload past worksheets or tests (`.odt`, `.docx`, `.pdf`); it extracts the exercises and figures, lets you pick the ones you want and builds a new A4 LibreOffice (`.odt`) document. Uploaded files are not stored on the server. The interface is in Spanish only. GPL v3 or later.

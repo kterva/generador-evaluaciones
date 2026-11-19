@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name: Generador de Repartidos y Evaluaciones
- * Plugin URI: https://culturalibre.edu.uy
+ * Plugin URI: https://culturalibre.uy
  * Description: Armá repartidos y evaluaciones a partir de tus propios documentos: extrae los ejercicios y las figuras y genera un archivo LibreOffice (.odt) listo para imprimir o editar. Incluye página de ayuda.
  * Version: 1.0.17
  * Author: Leonardo - Cultura Libre
- * Author URI: https://culturalibre.edu.uy
+ * Author URI: https://culturalibre.uy
  * License: GPL-3.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: generador-evaluaciones
@@ -212,7 +212,7 @@ function ge_render_privacy_banner() {
 }
 
 /**
- * Pie de página común (mismo estilo que graficador.culturalibre.edu.uy).
+ * Pie de página común (mismo estilo que graficador.culturalibre.uy).
  */
 function ge_render_footer() {
     ob_start();

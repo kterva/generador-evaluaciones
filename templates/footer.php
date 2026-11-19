@@ -3,7 +3,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 ?>
-<!-- Pie de página (mismo estilo que graficador.culturalibre.edu.uy) -->
+<!-- Pie de página (mismo estilo que graficador.culturalibre.uy) -->
 <footer class="ge-footer">
   <p><strong>Generador de Repartidos y Evaluaciones</strong> | Desarrollado por <strong>Leonardo Trujillo</strong></p>
   <p class="ge-footer-small">
